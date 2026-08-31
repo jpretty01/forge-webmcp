@@ -120,6 +120,7 @@ export interface Encounter {
   enemyIds: string[];
   difficultyTarget: number;
   reinforcementEnemyIds: string[];
+  reinforcementDelay?: number;
   hazard?: string;
   completed: boolean;
 }
@@ -167,6 +168,8 @@ export interface QAExecution {
   averageCompletionSteps: number;
   issues: QAIssue[];
   createdAt: string;
+  methodology?: string;
+  simulationRuns?: number;
 }
 
 export interface AgentProposal {
@@ -202,6 +205,7 @@ export interface AgentActivity {
   id: string;
   toolName: string;
   category: string;
+  source?: string;
   status: ActivityStatus;
   summary: string;
   timestamp: string;

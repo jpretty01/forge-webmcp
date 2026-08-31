@@ -10,12 +10,17 @@ Do not publish exploit details in a public issue. Report the affected route or t
 
 ## Trust Boundaries
 
-- WebMCP callers are untrusted and all tool inputs are validated.
+- WebMCP callers are untrusted. Inputs are constrained by closed JSON schemas and recursively validated at runtime, including nested objects, arrays, numeric bounds, maximum collection sizes, and maximum string lengths.
 - Display labels are not identifiers; mutations require stable entity IDs.
 - Agent permissions are enforced by the application service, not the browser UI.
 - PROPOSE mode requires a separate human approval action before significant changes execute.
 - Client persistence is untrusted on load and falls back to a canonical fixture when its required shape is missing.
 - FORGE contains no application secrets and performs no privileged network calls.
+- Production responses set a restrictive content policy, clickjacking protection, origin isolation, capability restrictions, strict referrer behavior, and MIME-sniffing protection.
+
+## Dependency Posture
+
+Production dependencies are audited in CI. React, Vite, and Vinext are pinned to releases that resolve the high-severity advisories identified during submission hardening. Vinext beta 8 removes the vulnerable `image-size` dependency path. A high-severity production audit fails CI.
 
 ## Known Preview Constraint
 

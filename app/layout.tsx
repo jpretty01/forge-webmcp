@@ -20,6 +20,7 @@ export const metadata: Metadata = {
   title: 'FORGE — Human-Agent World Laboratory',
   description:
     'Build, test, repair, and evolve interactive worlds together through WebMCP.',
+  icons: { icon: '/favicon.svg' },
   openGraph: {
     title: 'FORGE — Human-Agent World Laboratory',
     description: 'Build worlds together through WebMCP.',

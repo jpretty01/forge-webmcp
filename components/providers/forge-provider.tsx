@@ -29,21 +29,36 @@ export function ForgeProvider({ children }: { children: React.ReactNode }) {
   const stateRef = useRef(state);
   const [lastResult, setLastResult] = useState<ToolResult>();
   const [webMCPStatus, setWebMCPStatus] = useState<ForgeContextValue['webMCPStatus']>('registering');
+  const [hasHydrated, setHasHydrated] = useState(false);
 
   useEffect(() => {
     const stored = window.localStorage.getItem(STORAGE_KEY);
-    if (!stored) return;
+    if (!stored) {
+      setHasHydrated(true);
+      return;
+    }
     try {
-      setState(hydrateForgeState(JSON.parse(stored)));
+      const hydrated = hydrateForgeState(JSON.parse(stored));
+      stateRef.current = hydrated;
+      setState(hydrated);
     } catch {
       window.localStorage.removeItem(STORAGE_KEY);
+    } finally {
+      setHasHydrated(true);
     }
   }, []);
 
   useEffect(() => {
+    if (!hasHydrated) return;
     stateRef.current = state;
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  }, [state]);
+  }, [hasHydrated, state]);
+
+  const updateLocalState = useCallback((update: (current: ForgeState) => ForgeState) => {
+    const next = update(stateRef.current);
+    stateRef.current = next;
+    setState(next);
+  }, []);
 
   const executeTool = useCallback((name: string, parameters: Record<string, unknown> = {}, source = 'human-ui', approved = false) => {
     const execution = executeForgeTool(stateRef.current, name, parameters, { source, approved });
@@ -116,10 +131,10 @@ export function ForgeProvider({ children }: { children: React.ReactNode }) {
     approve,
     reject,
     updateProposal,
-    setPermissionMode: (permissionMode) => setState((current) => ({ ...current, permissionMode })),
-    setSelectedLocation: (selectedLocationId) => setState((current) => ({ ...current, selectedLocationId })),
-    setSelectedTab: (selectedTab) => setState((current) => ({ ...current, selectedTab })),
-  }), [approve, executeTool, lastResult, reject, state, updateProposal, webMCPStatus]);
+    setPermissionMode: (permissionMode) => updateLocalState((current) => ({ ...current, permissionMode })),
+    setSelectedLocation: (selectedLocationId) => updateLocalState((current) => ({ ...current, selectedLocationId })),
+    setSelectedTab: (selectedTab) => updateLocalState((current) => ({ ...current, selectedTab })),
+  }), [approve, executeTool, lastResult, reject, state, updateLocalState, updateProposal, webMCPStatus]);
 
   return <ForgeContext.Provider value={value}>{children}</ForgeContext.Provider>;
 }

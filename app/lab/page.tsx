@@ -1,9 +1,12 @@
 'use client';
 
-import { Bot, FlaskConical, GitPullRequestArrow, Map, ScrollText } from 'lucide-react';
+import { Activity, FlaskConical, GitPullRequestArrow, Map, ScrollText } from 'lucide-react';
+import { useState } from 'react';
 
+import { AgentGuidePanel } from '@/components/agent/agent-guide-panel';
 import { ActivityPanel } from '@/components/agent/activity-panel';
 import { GameCanvas } from '@/components/game/game-canvas';
+import { WorldNavigation } from '@/components/game/world-navigation';
 import { AuditPanel } from '@/components/governance/audit-panel';
 import { ProposalsPanel } from '@/components/governance/proposals-panel';
 import { ForgeHeader } from '@/components/layout/forge-header';
@@ -11,6 +14,7 @@ import { useForge } from '@/components/providers/forge-provider';
 import { QADashboard } from '@/components/qa/qa-dashboard';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { calibrateEncounterPressure, type EncounterPressureCalibration } from '@/lib/simulation/combat';
 
 const tabs = [
   { id: 'world', label: 'World', icon: Map },
@@ -21,7 +25,8 @@ const tabs = [
 
 export default function LabPage() {
   const { state, executeTool, setSelectedTab } = useForge();
-  const activeQuest = state.player.activeQuestIds[0] ? state.quests[state.player.activeQuestIds[0]] : undefined;
+  const [mobileEvidence, setMobileEvidence] = useState<'atlas' | 'activity'>('activity');
+  const [calibration, setCalibration] = useState<EncounterPressureCalibration>();
   function analyzeDungeon() {
     executeTool('get_dungeon_state', { dungeon_id: 'dungeon-forgotten-crypt' }, 'demo-orchestrator');
     executeTool('get_encounters', { dungeon_id: 'dungeon-forgotten-crypt' }, 'demo-orchestrator');
@@ -29,12 +34,13 @@ export default function LabPage() {
   }
 
   function proposeDifficultyChange() {
+    const measured = calibrateEncounterPressure(state, 'enc-gallery', 0.25, 2000, 1337);
+    setCalibration(measured);
     executeTool('modify_encounter', {
       encounter_id: 'enc-gallery',
-      add_enemy_archetype_id: 'arch-crypt-archer',
-      difficulty_target: 0.65,
-      hazard: 'timed falling braziers',
-      reason: 'Increase dungeon tactical pressure by roughly 25% through ranged composition and an environmental timing hazard, without increasing enemy health.',
+      ...measured.parameters,
+      spawn_position: { x: 68, y: 32 },
+      reason: `Calibration searched one-enemy composition and delayed-reinforcement candidates across ${measured.runs} seeded simulations. This is the closest minimal change to the requested 25-point pressure increase: player win rate ${(measured.baselineWinProbability * 100).toFixed(1)}% → ${(measured.projectedWinProbability * 100).toFixed(1)}% (${(measured.measuredPressureIncrease * 100).toFixed(1)} points).`,
     }, 'demo-orchestrator');
     setSelectedTab('proposals');
   }
@@ -42,22 +48,19 @@ export default function LabPage() {
     <main className="min-h-screen bg-background text-foreground">
       <ForgeHeader />
       <section className="forge-shell" aria-label="FORGE world laboratory">
-        <aside className="forge-panel forge-nav" aria-label="World navigation">
-          <div><p className="eyebrow">Ashen Reach</p><h2 className="mt-2 text-xl font-semibold">World atlas</h2><p className="mt-1 text-xs leading-5 text-muted-foreground">Greyhaven and the road to the Forgotten Crypt.</p></div>
-          <nav className="space-y-1" aria-label="Locations">{Object.values(state.locations).map((location) => <button key={location.id} className={`nav-item ${state.player.locationId === location.id ? 'nav-item-active' : ''}`} type="button" onClick={() => { if (state.locations[state.player.locationId].exits.includes(location.id)) executeTool('move_player', { location_id: location.id }); }}><Map /> {location.name}<span>{location.kind}</span></button>)}</nav>
-          <div className="rounded-xl border border-white/8 bg-white/2 p-3"><div className="flex items-center justify-between text-xs"><span className="font-medium">{state.player.name}</span><span className="text-muted-foreground">Level {state.player.level}</span></div><div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/6"><div className="h-full rounded-full bg-rose-400" style={{ width: `${state.player.health}%` }} /></div><div className="mt-2 flex justify-between text-[10px] text-muted-foreground"><span>{state.player.health}/{state.player.maxHealth} health</span><span>{state.player.inventory.reduce((sum, entry) => sum + entry.quantity, 0)} items</span></div></div>
-          <div className="rounded-xl border border-amber-400/15 bg-amber-400/5 p-3"><div className="flex items-center gap-2 text-xs font-medium text-amber-100"><Bot className="size-4" /> Permission: {state.permissionMode}</div><p className="mt-2 text-[11px] leading-5 text-muted-foreground">{state.permissionMode === 'observe' ? 'Agents may only inspect and simulate.' : state.permissionMode === 'propose' ? 'Meaningful changes wait for your approval.' : 'Allowed changes execute immediately and remain reversible.'}</p></div>
-          {activeQuest ? <div className="mt-auto rounded-xl border border-white/8 bg-black/10 p-3"><p className="eyebrow">Active quest</p><p className="mt-2 text-xs font-medium">{activeQuest.name}</p><p className="mt-1 text-[10px] leading-4 text-muted-foreground">{activeQuest.stages.find((stage) => stage.id === activeQuest.currentStageId)?.description}</p></div> : <Button className="mt-auto" variant="outline" onClick={() => executeTool('interact_npc', { npc_id: 'npc-garrick' })}>Accept Garrick’s quest</Button>}
-        </aside>
+        <WorldNavigation className="forge-nav" />
 
         <section className="forge-stage">
           <div className="mb-3 flex items-center gap-1 overflow-x-auto rounded-xl border border-white/8 bg-white/2 p-1" role="tablist" aria-label="Laboratory views">{tabs.map((tab) => { const Icon = tab.icon; const badge = tab.id === 'proposals' ? state.proposals.filter((proposal) => proposal.status === 'pending').length : tab.id === 'qa' ? state.qaExecutions[0]?.issues.length : 0; return <Button key={tab.id} size="sm" variant={state.selectedTab === tab.id ? 'secondary' : 'ghost'} role="tab" aria-selected={state.selectedTab === tab.id} onClick={() => setSelectedTab(tab.id)}><Icon /> {tab.label}{Boolean(badge) && <Badge variant="outline" className="ml-1 h-4 px-1 text-[8px]">{badge}</Badge>}</Button>; })}</div>
-          {state.selectedTab === 'world' && <><div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-300/12 bg-amber-300/4 p-3"><div><p className="eyebrow">Primary demo</p><p className="mt-1 text-xs text-muted-foreground">Let the agent inspect, simulate, and propose a tactical change.</p></div><div className="flex flex-wrap gap-2"><Button size="sm" variant="outline" onClick={analyzeDungeon}><Bot /> Analyze dungeon</Button><Button size="sm" className="forge-primary" onClick={proposeDifficultyChange}><GitPullRequestArrow /> Propose +25% pressure</Button></div></div><GameCanvas /></>}
+          <AgentGuidePanel />
+          <fieldset className="mb-3 grid grid-cols-2 gap-2 lg:hidden"><legend className="sr-only">Mobile evidence panels</legend><Button size="sm" variant={mobileEvidence === 'atlas' ? 'secondary' : 'outline'} onClick={() => setMobileEvidence('atlas')} aria-pressed={mobileEvidence === 'atlas'}><Map /> World atlas</Button><Button size="sm" variant={mobileEvidence === 'activity' ? 'secondary' : 'outline'} onClick={() => setMobileEvidence('activity')} aria-pressed={mobileEvidence === 'activity'}><Activity /> Agent activity</Button></fieldset>
+          <div className="mb-3 lg:hidden">{mobileEvidence === 'atlas' ? <WorldNavigation className="flex flex-col gap-6 rounded-xl border border-white/8" /> : <ActivityPanel className="flex min-h-[420px] flex-col gap-5 rounded-xl border border-white/8" />}</div>
+          {state.selectedTab === 'world' && <><div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-300/12 bg-amber-300/4 p-3"><div><p className="eyebrow">Built-in demo helper</p><p className="mt-1 text-xs text-muted-foreground">These buttons exercise the same services, but activity is explicitly labeled as demo-helper—not native agent traffic.</p>{calibration && <p className="mt-2 text-[11px] text-emerald-200">Measured comparison: {(calibration.baselineWinProbability * 100).toFixed(1)}% → {(calibration.projectedWinProbability * 100).toFixed(1)}% player win rate across {calibration.runs.toLocaleString()} seeded simulations.</p>}</div><div className="flex flex-wrap gap-2"><Button size="sm" variant="outline" onClick={analyzeDungeon}><Activity /> Analyze dungeon</Button><Button size="sm" className="forge-primary" onClick={proposeDifficultyChange}><GitPullRequestArrow /> Calibrate +25% pressure</Button></div></div><GameCanvas /></>}
           {state.selectedTab === 'qa' && <QADashboard />}
           {state.selectedTab === 'proposals' && <ProposalsPanel />}
           {state.selectedTab === 'audit' && <AuditPanel />}
         </section>
-        <ActivityPanel />
+        <ActivityPanel className="forge-activity" />
       </section>
     </main>
   );

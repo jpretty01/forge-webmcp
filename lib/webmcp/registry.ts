@@ -1,5 +1,5 @@
 import { createInitialSnapshot } from '@/data/initial-world';
-import { findProgressionBlockers, runQACampaign, runRegression, validateWorldReferences } from '@/lib/qa/engine';
+import { analyzeReachability, findProgressionBlockers, runQACampaign, runRegression, validateWorldReferences } from '@/lib/qa/engine';
 import { runCombatSimulation } from '@/lib/simulation/combat';
 import type { ForgeState, Quest, ToolErrorShape } from '@/types/domain';
 
@@ -34,8 +34,57 @@ export class ToolExecutionError extends Error {
 const objectSchema = (properties: Record<string, unknown> = {}, required: string[] = []) => ({
   type: 'object', properties, required, additionalProperties: false,
 });
-const stringProperty = (description: string) => ({ type: 'string', description });
+const stringProperty = (description: string, maxLength = 256) => ({ type: 'string', description, maxLength });
 const numberProperty = (description: string, minimum?: number, maximum?: number) => ({ type: 'number', description, minimum, maximum });
+
+function validateSchemaValue(value: unknown, schema: Record<string, unknown>, path: string, errors: string[]) {
+  if (schema.type === 'object') {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+      errors.push(`${path} must be an object.`);
+      return;
+    }
+    const record = value as Record<string, unknown>;
+    const properties = (schema.properties ?? {}) as Record<string, Record<string, unknown>>;
+    for (const required of (schema.required ?? []) as string[]) {
+      if (record[required] === undefined) errors.push(`${path}.${required} is required.`);
+    }
+    if (schema.additionalProperties === false) {
+      for (const key of Object.keys(record)) if (!properties[key]) errors.push(`${path}.${key} is not allowed.`);
+    }
+    for (const [key, child] of Object.entries(properties)) {
+      if (record[key] !== undefined) validateSchemaValue(record[key], child, `${path}.${key}`, errors);
+    }
+    return;
+  }
+  if (schema.type === 'array') {
+    if (!Array.isArray(value)) {
+      errors.push(`${path} must be an array.`);
+      return;
+    }
+    if (typeof schema.minItems === 'number' && value.length < schema.minItems) errors.push(`${path} must contain at least ${schema.minItems} item(s).`);
+    if (typeof schema.maxItems === 'number' && value.length > schema.maxItems) errors.push(`${path} must contain no more than ${schema.maxItems} item(s).`);
+    const itemSchema = schema.items as Record<string, unknown> | undefined;
+    if (itemSchema) value.forEach((item, index) => validateSchemaValue(item, itemSchema, `${path}[${index}]`, errors));
+    return;
+  }
+  if (schema.type === 'string') {
+    if (typeof value !== 'string') errors.push(`${path} must be a string.`);
+    else if (typeof schema.maxLength === 'number' && value.length > schema.maxLength) errors.push(`${path} must contain no more than ${schema.maxLength} characters.`);
+  } else if (schema.type === 'number') {
+    if (typeof value !== 'number' || !Number.isFinite(value)) errors.push(`${path} must be a finite number.`);
+    else {
+      if (typeof schema.minimum === 'number' && value < schema.minimum) errors.push(`${path} must be at least ${schema.minimum}.`);
+      if (typeof schema.maximum === 'number' && value > schema.maximum) errors.push(`${path} must be no more than ${schema.maximum}.`);
+    }
+  } else if (schema.type === 'boolean' && typeof value !== 'boolean') errors.push(`${path} must be a boolean.`);
+  if (Array.isArray(schema.enum) && !schema.enum.includes(value)) errors.push(`${path} must be one of: ${schema.enum.join(', ')}.`);
+}
+
+export function validateForgeToolInput(schema: Record<string, unknown>, input: Record<string, unknown>) {
+  const errors: string[] = [];
+  validateSchemaValue(input, schema, 'input', errors);
+  return errors;
+}
 
 function requiredString(input: Record<string, unknown>, key: string) {
   const value = input[key];
@@ -60,6 +109,40 @@ function notFound(entity: string, id: string): never {
 function recordValues<T>(record: Record<string, T>) {
   return Object.values(record);
 }
+
+const questRequirementSchema = objectSchema({
+  type: { type: 'string', enum: ['item', 'location', 'enemy_defeated', 'npc_state', 'world_variable'] },
+  targetId: stringProperty('Stable referenced entity ID.', 96),
+  value: { description: 'Optional required value.' },
+}, ['type', 'targetId']);
+
+const questStageSchema = objectSchema({
+  id: stringProperty('Stable stage ID.', 96),
+  title: stringProperty('Stage title.', 120),
+  description: stringProperty('Player-facing objective.', 500),
+  requirements: { type: 'array', items: questRequirementSchema, maxItems: 12 },
+  nextStageIds: { type: 'array', items: stringProperty('Stable next-stage ID.', 96), maxItems: 8 },
+}, ['id', 'title', 'description', 'requirements', 'nextStageIds']);
+
+const questSchema = objectSchema({
+  id: stringProperty('Stable quest ID.', 96),
+  name: stringProperty('Quest name.', 120),
+  level: numberProperty('Recommended player level.', 1, 100),
+  summary: stringProperty('Player-facing quest summary.', 500),
+  giverNpcId: stringProperty('Stable quest-giver NPC ID.', 96),
+  stages: { type: 'array', items: questStageSchema, minItems: 1, maxItems: 24 },
+  currentStageId: stringProperty('Stable current-stage ID.', 96),
+  status: { type: 'string', enum: ['available', 'active', 'completed'] },
+  rewards: {
+    type: 'array',
+    maxItems: 8,
+    items: objectSchema({
+      itemId: stringProperty('Optional stable reward item ID.', 96),
+      experience: numberProperty('Optional experience reward.', 0, 10000),
+    }),
+  },
+  endings: { type: 'array', items: stringProperty('Player-facing ending summary.', 240), maxItems: 8 },
+}, ['id', 'name', 'level', 'summary', 'giverNpcId', 'stages', 'currentStageId', 'status', 'rewards']);
 
 export const forgeToolRegistry: ForgeToolDefinition[] = [
   {
@@ -108,9 +191,9 @@ export const forgeToolRegistry: ForgeToolDefinition[] = [
     handler: (state, input) => { const id = requiredString(input, 'quest_id'); const quest = state.quests[id] ?? notFound('Quest', id); return { data: quest, summary: `Inspected quest graph for ${quest.name}.` }; },
   },
   {
-    name: 'modify_encounter', description: 'Changes encounter composition, positions, reinforcements, hazard, or difficulty target without directly increasing enemy health.', category: 'Encounters',
-    inputSchema: objectSchema({ encounter_id: stringProperty('Encounter to modify.'), add_enemy_archetype_id: stringProperty('Optional archetype to add.'), remove_enemy_id: stringProperty('Optional existing enemy instance to remove.'), difficulty_target: numberProperty('Target difficulty from 0 to 1.', 0, 1), hazard: stringProperty('Optional environmental hazard.'), reason: stringProperty('Why this change is needed.') }, ['encounter_id', 'reason']), outputDescription: 'Applied encounter delta.', exampleInput: { encounter_id: 'enc-gallery', add_enemy_archetype_id: 'arch-crypt-archer', difficulty_target: 0.65, hazard: 'timed falling braziers', reason: 'Increase tactical pressure by roughly 25% without adding health.' }, mutatesWorld: true, requiresApproval: true, reversible: true,
-    handler: (state, input) => { const id = requiredString(input, 'encounter_id'); const encounter = state.encounters[id] ?? notFound('Encounter', id); const beforeCount = encounter.enemyIds.length; if (typeof input.remove_enemy_id === 'string') { if (!encounter.enemyIds.includes(input.remove_enemy_id)) throw new ToolExecutionError({ code: 'INVALID_INPUT', message: `${input.remove_enemy_id} is not in ${id}.` }); encounter.enemyIds = encounter.enemyIds.filter((enemyId) => enemyId !== input.remove_enemy_id); } if (typeof input.add_enemy_archetype_id === 'string') { const archetype = state.enemyArchetypes[input.add_enemy_archetype_id] ?? notFound('Enemy archetype', input.add_enemy_archetype_id); const behavior = recordValues(state.enemyBehaviors).find((candidate) => candidate.enemyArchetypeId === archetype.id); if (!behavior) throw new ToolExecutionError({ code: 'INVALID_STATE', message: `No behavior profile exists for ${archetype.name}.` }); const enemyId = `enemy-${id}-${state.revision + 1}`; state.enemies[enemyId] = { id: enemyId, archetypeId: archetype.id, behaviorProfileId: behavior.id, health: archetype.maxHealth, defeated: false, position: { x: 68, y: 32 } }; encounter.enemyIds.push(enemyId); } if (typeof input.difficulty_target === 'number') encounter.difficultyTarget = Math.max(0, Math.min(1, input.difficulty_target)); if (typeof input.hazard === 'string') encounter.hazard = input.hazard; return { data: encounter, summary: `Modified ${encounter.name}: ${beforeCount} → ${encounter.enemyIds.length} enemies.`, expectedImpact: 'Changes composition and tactical pressure while preserving enemy health values.', afterSummary: `${encounter.enemyIds.length} active enemies; target difficulty ${Math.round(encounter.difficultyTarget * 100)}%.` }; },
+    name: 'modify_encounter', description: 'Changes encounter composition, reinforcement timing, spawn position, hazard, or difficulty target without directly increasing enemy health.', category: 'Encounters',
+    inputSchema: objectSchema({ encounter_id: stringProperty('Encounter to modify.', 96), add_enemy_archetype_id: stringProperty('Optional archetype to add to the opening composition.', 96), add_reinforcement_archetype_id: stringProperty('Optional archetype to add as a delayed reinforcement.', 96), reinforcement_delay: numberProperty('Turn when the added reinforcement enters.', 1, 20), remove_enemy_id: stringProperty('Optional existing enemy instance to remove.', 96), spawn_position: objectSchema({ x: numberProperty('Horizontal spawn position from 0 to 100.', 0, 100), y: numberProperty('Vertical spawn position from 0 to 100.', 0, 100) }, ['x', 'y']), difficulty_target: numberProperty('Target difficulty from 0 to 1.', 0, 1), hazard: stringProperty('Optional environmental hazard.', 160), reason: stringProperty('Why this change is needed.', 500) }, ['encounter_id', 'reason']), outputDescription: 'Applied encounter delta.', exampleInput: { encounter_id: 'enc-gallery', add_reinforcement_archetype_id: 'arch-gravebound', reinforcement_delay: 4, spawn_position: { x: 68, y: 32 }, difficulty_target: 0.65, reason: 'Apply the closest measured single-change calibration to the requested pressure target.' }, mutatesWorld: true, requiresApproval: true, reversible: true,
+    handler: (state, input) => { const id = requiredString(input, 'encounter_id'); const encounter = state.encounters[id] ?? notFound('Encounter', id); const beforeCount = encounter.enemyIds.length + encounter.reinforcementEnemyIds.length; const position = input.spawn_position as { x: number; y: number } | undefined; if (typeof input.remove_enemy_id === 'string') { if (!encounter.enemyIds.includes(input.remove_enemy_id) && !encounter.reinforcementEnemyIds.includes(input.remove_enemy_id)) throw new ToolExecutionError({ code: 'INVALID_INPUT', message: `${input.remove_enemy_id} is not in ${id}.` }); encounter.enemyIds = encounter.enemyIds.filter((enemyId) => enemyId !== input.remove_enemy_id); encounter.reinforcementEnemyIds = encounter.reinforcementEnemyIds.filter((enemyId) => enemyId !== input.remove_enemy_id); } for (const [inputKey, destination, prefix] of [['add_enemy_archetype_id', encounter.enemyIds, 'enemy'], ['add_reinforcement_archetype_id', encounter.reinforcementEnemyIds, 'reinforcement']] as const) { if (typeof input[inputKey] !== 'string') continue; const archetype = state.enemyArchetypes[input[inputKey]] ?? notFound('Enemy archetype', input[inputKey]); const behavior = recordValues(state.enemyBehaviors).find((candidate) => candidate.enemyArchetypeId === archetype.id); if (!behavior) throw new ToolExecutionError({ code: 'INVALID_STATE', message: `No behavior profile exists for ${archetype.name}.` }); const enemyId = `${prefix}-${id}-${state.revision + 1}`; state.enemies[enemyId] = { id: enemyId, archetypeId: archetype.id, behaviorProfileId: behavior.id, health: archetype.maxHealth, defeated: false, position: position ?? { x: 68, y: 32 } }; destination.push(enemyId); } if (typeof input.reinforcement_delay === 'number') encounter.reinforcementDelay = Math.floor(input.reinforcement_delay); if (typeof input.difficulty_target === 'number') encounter.difficultyTarget = input.difficulty_target; if (typeof input.hazard === 'string') encounter.hazard = input.hazard; const afterCount = encounter.enemyIds.length + encounter.reinforcementEnemyIds.length; return { data: encounter, summary: `Modified ${encounter.name}: ${beforeCount} → ${afterCount} total enemies.`, expectedImpact: 'Changes measured composition or reinforcement pressure while preserving enemy health values.', afterSummary: `${encounter.enemyIds.length} opening enemies and ${encounter.reinforcementEnemyIds.length} reinforcement enemies; target difficulty ${Math.round(encounter.difficultyTarget * 100)}%.` }; },
   },
   {
     name: 'modify_enemy_behavior', description: 'Changes aggression, range preference, retreat, coordination, targeting, reinforcement timing, special attacks, or patrol behavior.', category: 'Encounters',
@@ -123,19 +206,19 @@ export const forgeToolRegistry: ForgeToolDefinition[] = [
     handler: (state, input) => { const itemId = requiredString(input, 'item_id'); const locationId = requiredString(input, 'new_location_id'); const item = state.items[itemId] ?? notFound('Item', itemId); const location = state.locations[locationId] ?? notFound('Location', locationId); for (const candidate of recordValues(state.locations)) candidate.itemIds = candidate.itemIds.filter((id) => id !== itemId); location.itemIds.push(itemId); item.locationId = locationId; item.collected = false; if (itemId === 'item-crypt-key') state.worldVariables.cryptDefectActive = locationId === 'loc-crypt-sanctum'; return { data: item, summary: `Moved ${item.name} to ${location.name}.`, expectedImpact: 'Repairs item reachability while leaving unrelated world state intact.', afterSummary: `${item.name} now spawns in ${location.name}.` }; },
   },
   {
-    name: 'modify_quest', description: 'Applies controlled changes to a quest summary, reward experience, or current stage after validating references.', category: 'Quests',
-    inputSchema: objectSchema({ quest_id: stringProperty('Quest to modify.'), summary: stringProperty('Optional replacement summary.'), reward_experience: numberProperty('Optional experience reward.', 0, 1000), reason: stringProperty('Why this change is needed.') }, ['quest_id', 'reason']), outputDescription: 'Updated validated quest.', exampleInput: { quest_id: 'quest-ashes-remember', reward_experience: 120, reason: 'Align the reward with level-three pacing.' }, mutatesWorld: true, requiresApproval: true, reversible: true,
+    name: 'modify_quest', description: 'Applies a bounded change to a quest summary or experience reward, then validates the complete quest graph.', category: 'Quests',
+    inputSchema: objectSchema({ quest_id: stringProperty('Quest to modify.', 96), summary: stringProperty('Optional replacement summary.', 500), reward_experience: numberProperty('Optional experience reward.', 0, 1000), reason: stringProperty('Why this change is needed.', 500) }, ['quest_id', 'reason']), outputDescription: 'Updated validated quest.', exampleInput: { quest_id: 'quest-ashes-remember', reward_experience: 120, reason: 'Align the reward with level-three pacing.' }, mutatesWorld: true, requiresApproval: true, reversible: true,
     handler: (state, input) => { const id = requiredString(input, 'quest_id'); const quest = state.quests[id] ?? notFound('Quest', id); if (typeof input.summary === 'string') quest.summary = input.summary; if (typeof input.reward_experience === 'number') quest.rewards = [{ experience: optionalNumber(input, 'reward_experience', 0, 0, 1000) }]; const issues = validateWorldReferences(state).filter((candidate) => candidate.affectedEntityId === id); if (issues.length) throw new ToolExecutionError({ code: 'VALIDATION_FAILED', message: 'The resulting quest graph is invalid.', details: issues }); return { data: quest, summary: `Modified ${quest.name} and validated its graph.`, expectedImpact: 'Updates a bounded quest field while preserving stable IDs and transitions.', afterSummary: quest.summary }; },
   },
   {
     name: 'create_quest', description: 'Adds a structured quest supplied by the agent after validating stable NPC, item, location, enemy, and stage references.', category: 'Quests',
-    inputSchema: objectSchema({ quest: { type: 'object', description: 'A complete Quest object with stable IDs and stage graph.' }, reason: stringProperty('Why the quest should be added.') }, ['quest', 'reason']), outputDescription: 'Created validated quest.', exampleInput: { quest: { id: 'quest-cemetery-truth', name: 'Three Ashen Truths', level: 3, summary: 'Investigate Mira’s path through the cemetery.', giverNpcId: 'npc-garrick', currentStageId: 'stage-investigate', status: 'available', stages: [{ id: 'stage-investigate', title: 'Tracks in ash', description: 'Reach Cemetery Road.', requirements: [{ type: 'location', targetId: 'loc-cemetery-road' }], nextStageIds: [] }], rewards: [{ experience: 100 }], endings: ['Rescue Mira', 'Mira joined willingly', 'Return evidence to Garrick'] }, reason: 'Add a branching level-three cemetery quest.' }, mutatesWorld: true, requiresApproval: true, reversible: true,
-    handler: (state, input) => { const candidate = input.quest; if (!candidate || typeof candidate !== 'object') throw new ToolExecutionError({ code: 'INVALID_INPUT', message: 'quest must be a structured object.' }); const quest = structuredClone(candidate) as Quest; if (!quest.id || !quest.name || !Array.isArray(quest.stages) || quest.stages.length === 0) throw new ToolExecutionError({ code: 'INVALID_INPUT', message: 'Quest requires id, name, and at least one stage.' }); if (state.quests[quest.id]) throw new ToolExecutionError({ code: 'CONFLICT', message: `Quest ${quest.id} already exists.` }); state.quests[quest.id] = quest; const issues = validateWorldReferences(state).filter((entry) => entry.affectedEntityId === quest.id || entry.id.includes(quest.id)); if (issues.length) { delete state.quests[quest.id]; throw new ToolExecutionError({ code: 'VALIDATION_FAILED', message: 'Quest validation failed.', details: issues }); } return { data: quest, summary: `Created and validated ${quest.name}.`, expectedImpact: 'Adds one validated quest without modifying existing quest state.', afterSummary: `${quest.stages.length} stages and ${quest.endings?.length ?? 0} endings.` }; },
+    inputSchema: objectSchema({ quest: questSchema, reason: stringProperty('Why the quest should be added.', 500) }, ['quest', 'reason']), outputDescription: 'Created validated quest.', exampleInput: { quest: { id: 'quest-cemetery-truth', name: 'Three Ashen Truths', level: 3, summary: 'Investigate Mira’s path through the cemetery.', giverNpcId: 'npc-garrick', currentStageId: 'stage-investigate', status: 'available', stages: [{ id: 'stage-investigate', title: 'Tracks in ash', description: 'Reach Cemetery Road.', requirements: [{ type: 'location', targetId: 'loc-cemetery-road' }], nextStageIds: [] }], rewards: [{ experience: 100 }], endings: ['Rescue Mira', 'Mira joined willingly', 'Return evidence to Garrick'] }, reason: 'Add a branching level-three cemetery quest.' }, mutatesWorld: true, requiresApproval: true, reversible: true,
+    handler: (state, input) => { const quest = structuredClone(input.quest) as Quest; if (state.quests[quest.id]) throw new ToolExecutionError({ code: 'CONFLICT', message: `Quest ${quest.id} already exists.` }); const stageIds = quest.stages.map((stage) => stage.id); if (new Set(stageIds).size !== stageIds.length) throw new ToolExecutionError({ code: 'INVALID_INPUT', message: 'Quest stage IDs must be unique.' }); if (!stageIds.includes(quest.currentStageId)) throw new ToolExecutionError({ code: 'INVALID_INPUT', message: 'currentStageId must reference a stage in this quest.' }); state.quests[quest.id] = quest; const issues = validateWorldReferences(state).filter((entry) => entry.affectedEntityId === quest.id || entry.reproduction.includes(quest.id)); if (issues.length) { delete state.quests[quest.id]; throw new ToolExecutionError({ code: 'VALIDATION_FAILED', message: 'Quest validation failed.', details: issues }); } return { data: quest, summary: `Created and validated ${quest.name}.`, expectedImpact: 'Adds one deeply validated quest without modifying existing quest state.', afterSummary: `${quest.stages.length} stages and ${quest.endings?.length ?? 0} endings.` }; },
   },
   {
-    name: 'run_playthrough', description: 'Runs deterministic logical playthroughs over progression reachability and quest completion.', category: 'Simulation',
-    inputSchema: objectSchema({ runs: numberProperty('Number of runs.', 1, 1000), seed: numberProperty('Deterministic seed.', 0, 2147483647), target_quest_id: stringProperty('Optional quest ID.') }), outputDescription: 'Pass/fail playthrough statistics.', exampleInput: { runs: 100, seed: 1337, target_quest_id: 'quest-blacksmith-daughter' }, mutatesWorld: false, requiresApproval: false, reversible: false,
-    handler: (state, input) => { const runs = Math.floor(optionalNumber(input, 'runs', 100, 1, 1000)); const seed = Math.floor(optionalNumber(input, 'seed', 1337, 0, 2147483647)); const blockers = findProgressionBlockers(state); const failures = blockers.length ? Math.max(1, Math.ceil(runs * 0.01)) : 0; return { data: { runs, seed, passCount: runs - failures, failureCount: failures, completionRate: (runs - failures) / runs, issues: blockers, averageCompletionSteps: blockers.length ? 7.4 : 12.8 }, summary: `Ran ${runs} logical playthroughs: ${runs - failures} passed, ${failures} failed.` }; },
+    name: 'run_playthrough', description: 'Repeats deterministic progression reachability validation and reports whether the current world can complete the requested route.', category: 'Simulation',
+    inputSchema: objectSchema({ runs: numberProperty('Number of deterministic validation repetitions.', 1, 1000), seed: numberProperty('Recorded deterministic seed.', 0, 2147483647), target_quest_id: stringProperty('Optional quest ID.', 96) }), outputDescription: 'Truthful pass/fail progression validation statistics and methodology.', exampleInput: { runs: 100, seed: 1337, target_quest_id: 'quest-blacksmith-daughter' }, mutatesWorld: false, requiresApproval: false, reversible: false,
+    handler: (state, input) => { const runs = Math.floor(optionalNumber(input, 'runs', 100, 1, 1000)); const seed = Math.floor(optionalNumber(input, 'seed', 1337, 0, 2147483647)); if (typeof input.target_quest_id === 'string' && !state.quests[input.target_quest_id]) notFound('Quest', input.target_quest_id); const blockers = findProgressionBlockers(state); const failures = blockers.length > 0 ? runs : 0; const steps = analyzeReachability(state).steps; return { data: { runs, seed, passCount: runs - failures, failureCount: failures, completionRate: (runs - failures) / runs, issues: blockers, averageCompletionSteps: steps, methodology: 'Deterministic structured reachability validation. Repetitions verify stability; they are not independent player-behavior samples.' }, summary: blockers.length ? `Deterministic reachability failed in all ${runs} repetitions because the same progression blocker remained.` : `Deterministic reachability passed all ${runs} repetitions.` }; },
   },
   {
     name: 'run_combat_simulation', description: 'Runs seeded combat simulations using player stats, composition, behavior, range, coordination, and special abilities.', category: 'Simulation',
@@ -155,7 +238,7 @@ export const forgeToolRegistry: ForgeToolDefinition[] = [
   {
     name: 'run_regression', description: 'Runs deterministic QA after changes and compares the current world against expected completion rules.', category: 'QA',
     inputSchema: objectSchema({ runs: numberProperty('Number of runs.', 1, 1000), seed: numberProperty('Deterministic seed.', 0, 2147483647) }), outputDescription: 'Regression execution and issues.', exampleInput: { runs: 250, seed: 7331 }, mutatesWorld: false, requiresApproval: false, reversible: false,
-    handler: (state, input) => { const result = runRegression(state, Math.floor(optionalNumber(input, 'runs', 250, 1, 1000)), Math.floor(optionalNumber(input, 'seed', 7331, 0, 2147483647))); state.qaExecutions.unshift(result); return { data: result, summary: result.failureCount ? `Regression found ${result.failureCount} failing run${result.failureCount === 1 ? '' : 's'}.` : `Regression passed all ${result.runs} runs.` }; },
+    handler: (state, input) => { const result = runRegression(state, Math.floor(optionalNumber(input, 'runs', 250, 1, 1000)), Math.floor(optionalNumber(input, 'seed', 7331, 0, 2147483647))); state.qaExecutions.unshift(result); return { data: result, summary: result.failureCount ? `Regression found ${result.failureCount} failing validation check${result.failureCount === 1 ? '' : 's'}.` : `Regression passed all ${result.runs} validation checks.` }; },
   },
   {
     name: 'analyze_balance', description: 'Analyzes all dungeon encounters for survival probability, pacing, composition, and tactical pressure.', category: 'Simulation',
@@ -165,7 +248,7 @@ export const forgeToolRegistry: ForgeToolDefinition[] = [
   {
     name: 'break_my_game', description: 'Runs the broad deterministic FORGE QA campaign across progression, references, and combat balance.', category: 'QA',
     inputSchema: objectSchema({ runs: numberProperty('Campaign simulations.', 1, 1000), seed: numberProperty('Deterministic seed.', 0, 2147483647) }), outputDescription: 'Full QA execution with severity-ranked issues.', exampleInput: { runs: 500, seed: 1337 }, mutatesWorld: false, requiresApproval: false, reversible: false,
-    handler: (state, input) => { const result = runQACampaign(state, Math.floor(optionalNumber(input, 'runs', 500, 1, 1000)), Math.floor(optionalNumber(input, 'seed', 1337, 0, 2147483647))); state.qaExecutions.unshift(result); return { data: result, summary: `${result.runs} simulations completed: ${result.passCount} passed, ${result.failureCount} failed, ${result.issues.length} issue${result.issues.length === 1 ? '' : 's'} found.` }; },
+    handler: (state, input) => { const result = runQACampaign(state, Math.floor(optionalNumber(input, 'runs', 500, 1, 1000)), Math.floor(optionalNumber(input, 'seed', 1337, 0, 2147483647))); state.qaExecutions.unshift(result); return { data: result, summary: `${result.runs} validation checks completed with ${result.simulationRuns ?? 0} seeded combat trials: ${result.passCount} passed, ${result.failureCount} failed, ${result.issues.length} finding${result.issues.length === 1 ? '' : 's'}.` }; },
   },
   {
     name: 'move_player', description: 'Moves the player through a valid connected exit after checking progression gates.', category: 'Player',

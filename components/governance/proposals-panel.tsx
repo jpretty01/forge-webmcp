@@ -14,6 +14,7 @@ export function ProposalsPanel() {
   const [editingId, setEditingId] = useState<string>();
   const proposal = state.proposals.find((candidate) => candidate.id === editingId);
   const [draft, setDraft] = useState('');
+  const [editError, setEditError] = useState('');
   const pending = state.proposals.filter((candidate) => candidate.status === 'pending');
 
   function beginEdit(id: string) {
@@ -21,6 +22,7 @@ export function ProposalsPanel() {
     if (!candidate) return;
     setEditingId(id);
     setDraft(JSON.stringify(candidate.parameters, null, 2));
+    setEditError('');
   }
 
   function saveEdit() {
@@ -28,8 +30,9 @@ export function ProposalsPanel() {
     try {
       updateProposal(editingId, JSON.parse(draft) as Record<string, unknown>);
       setEditingId(undefined);
+      setEditError('');
     } catch {
-      // Invalid JSON stays visible for correction; the textarea is marked below.
+      setEditError('Enter valid JSON before saving. The tool schema will validate field values when you approve.');
     }
   }
 
@@ -41,7 +44,8 @@ export function ProposalsPanel() {
       <Dialog open={Boolean(proposal)} onOpenChange={(open) => { if (!open) setEditingId(undefined); }}>
         <DialogContent>
           <DialogHeader><DialogTitle>Modify proposal parameters</DialogTitle><DialogDescription>Edit the structured input. The same validation rules run when this proposal is approved.</DialogDescription></DialogHeader>
-          <Textarea value={draft} onChange={(event) => setDraft(event.target.value)} className="min-h-64 font-mono text-xs" aria-label="Proposal parameters JSON" />
+          <Textarea value={draft} onChange={(event) => { setDraft(event.target.value); setEditError(''); }} className="min-h-64 font-mono text-xs" aria-label="Proposal parameters JSON" aria-invalid={Boolean(editError)} aria-describedby={editError ? 'proposal-edit-error' : undefined} />
+          {editError && <p id="proposal-edit-error" className="text-xs text-rose-300" role="alert">{editError}</p>}
           <DialogFooter><Button variant="outline" onClick={() => setEditingId(undefined)}>Cancel</Button><Button onClick={saveEdit}>Save parameters</Button></DialogFooter>
         </DialogContent>
       </Dialog>

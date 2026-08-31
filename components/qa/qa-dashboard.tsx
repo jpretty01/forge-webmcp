@@ -11,17 +11,17 @@ const severityStyle = { critical: 'border-rose-400/25 bg-rose-400/8 text-rose-20
 export function QADashboard() {
   const { state, executeTool } = useForge();
   const execution = state.qaExecutions[0];
-  if (!execution) return <section className="empty-state"><FlaskConical className="size-7 text-amber-200" /><h2>Ready to break Ashen Reach</h2><p>Run a deterministic campaign across quest progression, references, deadlocks, and combat balance.</p><Button className="forge-primary" onClick={() => executeTool('break_my_game', { runs: 500, seed: 1337 })}><FlaskConical /> Run 500 simulations</Button></section>;
+  if (!execution) return <section className="empty-state"><FlaskConical className="size-7 text-amber-200" /><h2>Ready to validate Ashen Reach</h2><p>Prove the current repair with regression, or run the full deterministic reference, progression, and balance campaign.</p><div className="flex flex-wrap justify-center gap-2"><Button className="forge-primary" onClick={() => executeTool('run_regression', { runs: 250, seed: 7331 })}><RotateCw /> Run regression</Button><Button variant="outline" onClick={() => executeTool('break_my_game', { runs: 500, seed: 1337 })}><FlaskConical /> Run full QA campaign</Button></div></section>;
   return (
     <section className="space-y-4" aria-label="QA results">
       <div className="grid gap-3 sm:grid-cols-4">
-        <Metric label="Simulations" value={execution.runs.toLocaleString()} icon={<FlaskConical />} />
+        <Metric label="Validation checks" value={execution.runs.toLocaleString()} icon={<FlaskConical />} />
         <Metric label="Passed" value={execution.passCount.toLocaleString()} icon={<CheckCircle2 />} tone="emerald" />
         <Metric label="Failed" value={execution.failureCount.toLocaleString()} icon={<AlertTriangle />} tone="rose" />
         <Metric label="Completion" value={`${(execution.completionRate * 100).toFixed(1)}%`} icon={<ShieldAlert />} />
       </div>
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/8 bg-white/2 p-3">
-        <div><p className="text-sm font-medium">{execution.kind === 'regression' ? 'Regression campaign' : 'Break My Game campaign'}</p><p className="mt-1 text-xs text-muted-foreground">Seed {execution.seed} · average {execution.averageCompletionSteps.toFixed(1)} progression steps</p></div>
+        <div><p className="text-sm font-medium">{execution.kind === 'regression' ? 'Regression campaign' : 'Break My Game campaign'}</p><p className="mt-1 text-xs text-muted-foreground">Seed {execution.seed} · {execution.simulationRuns?.toLocaleString() ?? 0} seeded combat trials · {execution.averageCompletionSteps.toFixed(1)} reachability passes</p>{execution.methodology && <p className="mt-1 max-w-2xl text-[10px] leading-4 text-muted-foreground">{execution.methodology}</p>}</div>
         <Button size="sm" variant="outline" onClick={() => executeTool('run_regression', { runs: 250, seed: 7331 })}><RotateCw /> Retest current world</Button>
       </div>
       {execution.issues.length === 0 ? <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/5 p-6 text-center"><CheckCircle2 className="mx-auto size-8 text-emerald-300" /><h3 className="mt-3 font-semibold">All validation layers passed</h3><p className="mt-2 text-sm text-muted-foreground">No progression, reference, or combat blockers were detected.</p></div>

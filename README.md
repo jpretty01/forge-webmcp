@@ -32,7 +32,8 @@ WebMCP currently requires a supported Chromium preview or origin-trial environme
 - 30 atomic WebMCP tools across World, Player, Quests, Encounters, Simulation, QA, and Governance.
 - OBSERVE, PROPOSE, and AUTONOMOUS permission modes enforced in the shared service layer.
 - Human approval queue with approve, reject, and structured parameter modification.
-- Seeded combat simulation affected by composition, range, aggression, coordination, and special-attack frequency.
+- Seeded combat simulation affected by composition, reinforcements, range, aggression, coordination, and special-attack frequency.
+- Measured encounter calibration that searches minimal candidates instead of assuming a requested pressure change was achieved.
 - Static reference validation, quest graph validation, progression reachability, and deterministic regression.
 - BREAK MY GAME campaign with severity-ranked, reproducible issues and retest support.
 - Complete agent activity stream, audit history, checkpoints, rollback, and deterministic reset.
@@ -105,8 +106,8 @@ Every tool call records source, parameters, permission mode, approval status, su
 ## Demo Scenario
 
 1. Open `/lab` and accept Garrick Thorn’s quest.
-2. Select **Analyze dungeon** to run structured inspection and balance simulation.
-3. Select **Propose +25% pressure** and review the proposal.
+2. Paste the golden prompt from the persistent judge guide into a native WebMCP agent.
+3. Optionally select **Calibrate +25% pressure** to search measured encounter candidates and review the closest minimal proposal.
 4. Approve the composition and hazard change.
 5. Run **BREAK MY GAME**.
 6. Inspect the critical circular key dependency.
@@ -138,6 +139,7 @@ pnpm typecheck
 pnpm lint
 pnpm test
 pnpm build
+pnpm test:e2e
 ```
 
 Set `NEXT_PUBLIC_SITE_URL` to the trusted public origin when validating social metadata. Copy `.env.example` to `.env.local`; never commit credentials.
@@ -155,7 +157,7 @@ FORGE does not implement backend MCP transports. Tools execute client-side in th
 
 ## Testing
 
-The automated core suite covers seeded world state, the circular defect, repair, permissions, approval, rejection, encounter modification, behavior-sensitive deterministic combat, regression, audit recording, checkpoint rollback, reset, schemas, invalid IDs, and the complete rescue flow.
+The automated core suite covers seeded world state, the circular defect, repair, permissions, approval, rejection, encounter modification, behavior-sensitive deterministic combat, regression, audit recording, checkpoint rollback, reset, schemas, invalid IDs, and the complete rescue flow. A Playwright suite covers landing-to-lab navigation, all 30 WebMCP registrations through a browser API harness, native proposal/approval/regression/rollback/reset, keyboard access, and desktop plus narrow-pane layouts.
 
 The test harness loads the real TypeScript modules through Vite and executes them with Node’s built-in test runner. This avoids duplicated test-only business logic.
 

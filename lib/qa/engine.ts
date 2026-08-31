@@ -57,6 +57,14 @@ export function validateWorldReferences(state: ForgeState): QAIssue[] {
     if (!state.npcs[quest.giverNpcId]) {
       issues.push(issue(`qa-missing-npc-${quest.id}`, 'high', 'Quest graph', quest.id, 'Missing quest giver', `${quest.name} references an NPC that does not exist.`, [quest.id, quest.giverNpcId], 'Assign an existing NPC as the quest giver.'));
     }
+    if (!quest.stages.some((stage) => stage.id === quest.currentStageId)) {
+      issues.push(issue(`qa-missing-current-stage-${quest.id}`, 'high', 'Quest graph', quest.id, 'Current quest stage is missing', `${quest.name} points to missing current stage ${quest.currentStageId}.`, [quest.id, quest.currentStageId], 'Set currentStageId to a stage in the quest graph.'));
+    }
+    for (const reward of quest.rewards) {
+      if (reward.itemId && !state.items[reward.itemId]) {
+        issues.push(issue(`qa-missing-reward-${quest.id}-${reward.itemId}`, 'high', 'Invalid reference', quest.id, 'Quest reward references a missing item', `${quest.name} rewards ${reward.itemId}, which does not exist.`, [quest.id, reward.itemId], 'Replace the reward with a valid item ID.'));
+      }
+    }
     for (const stage of quest.stages) {
       for (const requirement of stage.requirements) {
         const exists = requirement.type === 'item' ? Boolean(state.items[requirement.targetId])
@@ -114,15 +122,29 @@ export function runQACampaign(state: ForgeState, runs = 500, seed = 1337): QAExe
   }
 
   const issues = [...blockers, ...referenceIssues, ...combatIssues];
-  const failedRuns = blockers.length > 0 ? Math.max(1, Math.ceil(runs * 0.006)) : 0;
+  const referenceCheckCount = Object.values(state.quests).reduce((count, quest) => count
+    + 2
+    + quest.rewards.filter((reward) => reward.itemId).length
+    + quest.stages.reduce((stageCount, stage) => stageCount + stage.requirements.length + stage.nextStageIds.length, 0), 0);
+  const progressionCheckCount = Object.keys(state.gates).length;
+  const combatCheckCount = state.dungeons['dungeon-forgotten-crypt'].encounterIds.length;
+  const checkCount = referenceCheckCount + progressionCheckCount + combatCheckCount;
+  const failedCheckCount = new Set(
+    issues
+      .filter((candidate) => candidate.severity === 'critical' || candidate.severity === 'high')
+      .map((candidate) => `${candidate.category}:${candidate.affectedEntityId}`),
+  ).size;
+  const reachability = analyzeReachability(state);
   return {
     id: `qa-${state.revision}-${seed}-${runs}`,
-    kind: 'broad_campaign', seed, runs,
-    passCount: runs - failedRuns,
-    failureCount: failedRuns,
-    completionRate: (runs - failedRuns) / runs,
-    averageCompletionSteps: blockers.length > 0 ? 7.4 : 12.8,
+    kind: 'broad_campaign', seed, runs: checkCount,
+    passCount: checkCount - failedCheckCount,
+    failureCount: failedCheckCount,
+    completionRate: (checkCount - failedCheckCount) / checkCount,
+    averageCompletionSteps: reachability.steps,
     issues,
+    simulationRuns: Math.min(runs, 500) * combatCheckCount,
+    methodology: `${checkCount} deterministic reference, progression, and balance checks; ${Math.min(runs, 500).toLocaleString()} seeded combat trials per encounter. Medium-severity findings are reported as warnings, not failed checks.`,
     createdAt: new Date().toISOString(),
   };
 }

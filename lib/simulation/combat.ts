@@ -14,6 +14,17 @@ export interface CombatSimulationResult {
   recommendations: string[];
 }
 
+export interface EncounterPressureCalibration {
+  encounterId: string;
+  requestedPressureIncrease: number;
+  baselineWinProbability: number;
+  projectedWinProbability: number;
+  measuredPressureIncrease: number;
+  parameters: Record<string, unknown>;
+  runs: number;
+  seed: number;
+}
+
 function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
 }
@@ -44,8 +55,16 @@ export function runCombatSimulation(
       .map((enemyId) => ({ enemyId, health: state.enemies[enemyId].health }));
     let turn = 0;
 
-    while (playerHealth > 0 && enemyHealth.some((enemy) => enemy.health > 0) && turn < 80) {
+    let reinforcementsAdded = false;
+    while (playerHealth > 0 && (enemyHealth.some((enemy) => enemy.health > 0) || (!reinforcementsAdded && encounter.reinforcementEnemyIds.length > 0)) && turn < 80) {
       turn += 1;
+      if (!reinforcementsAdded && turn >= (encounter.reinforcementDelay ?? 3)) {
+        for (const enemyId of encounter.reinforcementEnemyIds) {
+          const enemy = state.enemies[enemyId];
+          if (enemy && !enemy.defeated) enemyHealth.push({ enemyId, health: enemy.health });
+        }
+        reinforcementsAdded = true;
+      }
       if (playerHealth < state.player.maxHealth * 0.33 && draughts > 0) {
         playerHealth = Math.min(state.player.maxHealth, playerHealth + 35);
         draughts -= 1;
@@ -108,4 +127,65 @@ export function runCombatSimulation(
     problematicEnemies,
     recommendations,
   };
+}
+
+export function calibrateEncounterPressure(
+  state: ForgeState,
+  encounterId: string,
+  requestedPressureIncrease = 0.25,
+  runs = 1000,
+  seed = 1337,
+): EncounterPressureCalibration {
+  const encounter = state.encounters[encounterId];
+  if (!encounter) throw new Error(`Encounter ${encounterId} was not found.`);
+  const baseline = runCombatSimulation(state, encounterId, runs, seed).winProbability;
+  const candidates: EncounterPressureCalibration[] = [];
+
+  for (const archetype of Object.values(state.enemyArchetypes)) {
+    const behavior = Object.values(state.enemyBehaviors).find((candidate) => candidate.enemyArchetypeId === archetype.id);
+    if (!behavior) continue;
+    for (const mode of ['primary', 'reinforcement'] as const) {
+      const delays = mode === 'reinforcement' ? [2, 3, 4, 5, 6, 8, 10] : [0];
+      for (const delay of delays) {
+        const candidateState = structuredClone(state);
+        const candidateEncounter = candidateState.encounters[encounterId];
+        const enemyId = `calibration-${mode}-${archetype.id}-${delay}`;
+        candidateState.enemies[enemyId] = {
+          id: enemyId,
+          archetypeId: archetype.id,
+          behaviorProfileId: behavior.id,
+          health: archetype.maxHealth,
+          defeated: false,
+          position: { x: 68, y: 32 },
+        };
+        if (mode === 'primary') candidateEncounter.enemyIds.push(enemyId);
+        else {
+          candidateEncounter.reinforcementEnemyIds.push(enemyId);
+          candidateEncounter.reinforcementDelay = delay;
+        }
+        const projected = runCombatSimulation(candidateState, encounterId, runs, seed).winProbability;
+        const parameters: Record<string, unknown> = mode === 'primary'
+          ? { add_enemy_archetype_id: archetype.id }
+          : { add_reinforcement_archetype_id: archetype.id, reinforcement_delay: delay };
+        candidates.push({
+          encounterId,
+          requestedPressureIncrease,
+          baselineWinProbability: baseline,
+          projectedWinProbability: projected,
+          measuredPressureIncrease: baseline - projected,
+          parameters,
+          runs,
+          seed,
+        });
+      }
+    }
+  }
+
+  const best = candidates.sort((left, right) => {
+    const leftError = Math.abs(left.measuredPressureIncrease - requestedPressureIncrease);
+    const rightError = Math.abs(right.measuredPressureIncrease - requestedPressureIncrease);
+    return leftError - rightError || Object.keys(left.parameters).length - Object.keys(right.parameters).length;
+  })[0];
+  if (!best) throw new Error(`No safe calibration candidate exists for ${encounter.name}.`);
+  return best;
 }

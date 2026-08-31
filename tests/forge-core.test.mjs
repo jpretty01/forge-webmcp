@@ -10,7 +10,9 @@ let createInitialForgeState;
 let executeForgeTool;
 let approveProposal;
 let rejectProposal;
+let hydrateForgeState;
 let runCombatSimulation;
+let calibrateEncounterPressure;
 let findProgressionBlockers;
 let forgeToolRegistry;
 
@@ -23,8 +25,8 @@ before(async () => {
     resolve: { alias: { '@': root } },
   });
   ({ createInitialForgeState } = await server.ssrLoadModule('/data/initial-world.ts'));
-  ({ executeForgeTool, approveProposal, rejectProposal } = await server.ssrLoadModule('/lib/game/service.ts'));
-  ({ runCombatSimulation } = await server.ssrLoadModule('/lib/simulation/combat.ts'));
+  ({ executeForgeTool, approveProposal, rejectProposal, hydrateForgeState } = await server.ssrLoadModule('/lib/game/service.ts'));
+  ({ runCombatSimulation, calibrateEncounterPressure } = await server.ssrLoadModule('/lib/simulation/combat.ts'));
   ({ findProgressionBlockers } = await server.ssrLoadModule('/lib/qa/engine.ts'));
   ({ forgeToolRegistry } = await server.ssrLoadModule('/lib/webmcp/registry.ts'));
 });
@@ -110,6 +112,24 @@ test('combat simulation is deterministic and behavior-sensitive', () => {
   assert.ok(harder.winProbability <= first.winProbability);
 });
 
+test('pressure calibration searches measured candidates near the requested target', () => {
+  const state = createInitialForgeState();
+  const calibration = calibrateEncounterPressure(state, 'enc-gallery', 0.25, 2000, 1337);
+  assert.ok(Math.abs(calibration.measuredPressureIncrease - 0.25) <= 0.03);
+  assert.equal(calibration.baselineWinProbability, 1);
+  assert.ok(calibration.projectedWinProbability > 0.7 && calibration.projectedWinProbability < 0.8);
+  assert.ok(calibration.parameters.add_reinforcement_archetype_id);
+  assert.ok(calibration.parameters.reinforcement_delay);
+});
+
+test('deterministic playthrough metrics fail truthfully instead of fabricating partial counts', () => {
+  const result = executeForgeTool(createInitialForgeState(), 'run_playthrough', { runs: 100, seed: 1337 });
+  assert.equal(result.result.ok, true);
+  assert.equal(result.result.data.passCount, 0);
+  assert.equal(result.result.data.failureCount, 100);
+  assert.match(result.result.data.methodology, /not independent player-behavior samples/);
+});
+
 test('regression passes the progression layer after the narrow repair', () => {
   let state = createInitialForgeState();
   state.permissionMode = 'autonomous';
@@ -150,6 +170,39 @@ test('registry exposes unique, described, atomic WebMCP tools', () => {
     assert.ok(tool.description.length > 20);
     assert.equal(tool.inputSchema.type, 'object');
   }
+});
+
+test('closed schemas reject oversized and unexpected agent input before proposal creation', () => {
+  const oversized = executeForgeTool(createInitialForgeState(), 'modify_item_spawn', {
+    item_id: 'item-crypt-key', new_location_id: 'loc-crypt-entry', reason: 'x'.repeat(501),
+  });
+  assert.equal(oversized.result.ok, false);
+  assert.equal(oversized.result.error.code, 'INVALID_INPUT');
+  assert.equal(oversized.state.proposals.length, 0);
+
+  const unexpected = executeForgeTool(createInitialForgeState(), 'create_quest', {
+    quest: {
+      id: 'quest-invalid', name: 'Invalid', level: 3, summary: 'Invalid nested input.', giverNpcId: 'npc-garrick',
+      currentStageId: 'stage-one', status: 'available', stages: [{ id: 'stage-one', title: 'One', description: 'One.', requirements: [], nextStageIds: [], injected: true }], rewards: [],
+    },
+    reason: 'Verify closed nested schema.',
+  });
+  assert.equal(unexpected.result.ok, false);
+  assert.equal(unexpected.result.error.code, 'INVALID_INPUT');
+});
+
+test('revision-zero persisted state hydrates without losing QA or audit evidence', () => {
+  const state = createInitialForgeState();
+  state.revision = 0;
+  state.auditLog.push({ id: 'audit-zero', timestamp: new Date(0).toISOString(), toolName: 'get_world_state', category: 'World', source: 'webmcp-agent', parameters: {}, permissionMode: 'propose', approvalStatus: 'not_required', success: true, stateChanging: false, summary: 'Persisted evidence.' });
+  const hydrated = hydrateForgeState(state);
+  assert.equal(hydrated.revision, 0);
+  assert.equal(hydrated.auditLog[0].id, 'audit-zero');
+});
+
+test('activity records preserve native-agent provenance', () => {
+  const execution = executeForgeTool(createInitialForgeState(), 'get_world_state', {}, { source: 'webmcp-agent' });
+  assert.equal(execution.state.activities[0].source, 'webmcp-agent');
 });
 
 test('invalid stable IDs fail closed and create a failed audit record', () => {
