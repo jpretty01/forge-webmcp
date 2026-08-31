@@ -40,6 +40,7 @@ next-env.d.ts
 /.wrangler/
 /outputs/
 /work/
+/artifacts/
 
 # local hackathon workflow state
 .devpost-hackathon-state.json

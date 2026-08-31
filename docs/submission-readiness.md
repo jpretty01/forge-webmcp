@@ -5,15 +5,15 @@ Last hardened: 2026-08-31
 ## P0 — External Submission Blockers
 
 - [x] Public production site opens without owner authentication; `/`, `/lab`, `/webmcp`, and `/favicon.ico` returned successful unauthenticated responses on 2026-08-31.
-- [ ] All 30 native WebMCP tools are discovered and exercised on the public origin.
+- [x] All 30 native WebMCP tools were discovered on the public origin; the complete diagnosis → proposal → human approval → regression → audit → rollback path was exercised through the real preview API on 2026-08-31.
 - [x] Public source repository is available at `https://github.com/jpretty01/forge-webmcp`; GitHub detects and displays the MIT license.
-- [ ] Public YouTube demonstration is under three minutes and follows `docs/demo-script.md`.
+- [ ] The verified 2:49, 1080p narrated demonstration and SRT captions are ready locally; upload the final approved cut publicly to YouTube.
 - [ ] Devpost fields use the final public site, source, and video URLs.
 - [ ] Devpost entry is submitted—not left as a draft—and its public page is verified.
 
 These checks require external account state and must not be marked complete from localhost evidence.
 
-The complete Playwright matrix also passed against the public deployment on 2026-08-31. That verifies the deployed UI and service flow through a standards-shaped WebMCP harness; it does not replace the remaining real preview-browser discovery run.
+The complete Playwright matrix also passed against the public deployment on 2026-08-31. The real in-app preview-browser run separately proved native discovery and the governed golden path on the public origin.
 
 ## P1 — Implemented Hardening
 
@@ -40,4 +40,4 @@ pnpm audit --prod --audit-level high
 pnpm test:e2e
 ```
 
-Run the final E2E suite again with `PLAYWRIGHT_BASE_URL` set to the public deployment. Native WebMCP discovery itself must then be verified manually in a compatible preview browser because standard Playwright Chromium does not expose the preview API.
+For later releases, rerun the E2E suite with `PLAYWRIGHT_BASE_URL` set to the public deployment and repeat the native golden path in a compatible preview browser.

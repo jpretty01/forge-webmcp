@@ -82,7 +82,7 @@ https://github.com/jpretty01/forge-webmcp
 
 ## Demo Video
 
-TODO: Add a public YouTube URL for a narrated video under three minutes.
+TODO: Upload the verified local draft to YouTube and add its public URL. The current cut is 2:49 at 1920×1080 with AAC narration, plus an SRT caption file.
 
 Recorder-ready 175-second maximum outline (the narrated cut targets 165 seconds):
 
