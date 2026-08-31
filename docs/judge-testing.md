@@ -2,6 +2,8 @@
 
 FORGE is a human-governed live-operations and QA control plane for interactive worlds, demonstrated through a playable RPG.
 
+Its policy is not “approve every click.” Inspection, diagnosis, simulation, and validation run directly. In the default PROPOSE mode, consequential mutations pause for human approval; trusted testers can explicitly select AUTONOMOUS for bounded registered mutations. Capability and authority remain separate in every mode.
+
 ## Golden Path
 
 1. Open the public FORGE URL in a supported Chromium WebMCP preview.

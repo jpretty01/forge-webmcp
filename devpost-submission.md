@@ -24,6 +24,8 @@ Structured inspection → bounded proposal → human approval → measured execu
 
 WebMCP is essential because the browser exposes domain capabilities and schemas directly. The agent does not need to guess which button represents a safe repair, and the human can see exactly which actor requested, approved, executed, validated, or reversed each action.
 
+FORGE deliberately separates capability from authority. Agents can use the complete registered workflow, but routine reads, diagnosis, simulation, and validation proceed automatically while consequential world changes require approval in the default mode. A human can explicitly opt into bounded autonomous execution, and reversible mutations still produce checkpoints and audit evidence. The result is meaningful agency without unconditional control.
+
 ## How We Used AI
 
 FORGE does not hide an opaque model behind a themed chat box. It exposes 30 browser-native tools through `document.modelContext.registerTool()` so a compatible external agent can reason over structured world state and invoke bounded capabilities. Tools span world inspection, player actions, quests, encounters, seeded simulation, QA, and governance.

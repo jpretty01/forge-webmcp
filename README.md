@@ -81,9 +81,12 @@ The exact registry, current JSON schemas, approval requirements, and examples ar
 
 ## Human Approval Model
 
+- **Capability is separate from authority.** The agent can discover and invoke the full registered workflow, but the active permission mode decides whether a call may inspect, propose, or execute.
 - **OBSERVE** permits inspection and simulation but denies gameplay mutations.
 - **PROPOSE** is the default. Significant agent changes create a proposal and leave gameplay state untouched until a human approves it.
 - **AUTONOMOUS** allows registered mutations to execute immediately. Reversible actions still create checkpoints.
+
+Read-only inspection, diagnosis, simulation, and validation can run without interrupting the human. Material world changes use approval by default. Explicit autonomous mode is available for trusted, bounded, reversible operations; invalid, unregistered, or disallowed operations remain blocked in every mode. This keeps routine agent work fluid without treating unrestricted authority as a prerequisite for useful agency.
 
 Approvals, rejections, validation failures, and permission denials are all audit events. Permission enforcement lives in `lib/game/service.ts`, not only in UI controls.
 
