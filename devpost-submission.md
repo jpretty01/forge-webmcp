@@ -135,15 +135,15 @@ Official deadline: 2026-09-03 20:00 UTC (3:00 PM America/Chicago; Devpost lists 
 
 ## TODO Official Form Fields
 
-- **28249 — Submitter Type (required):** TODO — choose Individual, Team of Individuals, or Organization.
-- **28250 — Country of residence (required):** TODO — confirm all applicable countries.
-- **28251 — Organization name (optional):** TODO only if submitting on behalf of an organization.
-- **28252 — App Status (required):** Draft answer: New.
+- **28249 — Submitter Type (required):** Individual.
+- **28250 — Country of residence (required):** United States.
+- **28251 — Organization name (optional):** Not applicable; submitting as an individual.
+- **28252 — App Status (required):** New.
 - **28253 — Existing-project updates:** Not applicable if App Status remains New.
 - **28254 — Live URL (required):** https://forge-human-agent-world-laboratory.themfpretty.chatgpt.site
 - **28255 — Testing instructions:** Use the ten-step golden path above. No credentials are required.
 - **28256 — Public code repository (required):** https://github.com/jpretty01/forge-webmcp
 - **28257 — Agents/clients tested (required):** ChatGPT’s in-app browser for native WebMCP discovery and the complete public-origin diagnosis → proposal → human approval → regression → audit → rollback path; Google Chrome/Playwright for desktop and narrow-pane E2E through a standards-shaped WebMCP harness.
 - **28258 — AI tools used (required):** Codex and ChatGPT, including architecture review, implementation, debugging, security hardening, automated tests, browser QA, and deployment verification.
-- **28259 — Learning level (required):** TODO — choose None, Moderate, or Significant.
-- **28260 — Career AI value (required):** TODO — choose Yes or No.
+- **28259 — Learning level (required):** Significant.
+- **28260 — Career AI value (required):** Yes.
