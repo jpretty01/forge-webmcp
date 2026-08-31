@@ -7,7 +7,7 @@ Last hardened: 2026-08-31
 - [x] Public production site opens without owner authentication; `/`, `/lab`, `/webmcp`, and `/favicon.ico` returned successful unauthenticated responses on 2026-08-31.
 - [x] All 30 native WebMCP tools were discovered on the public origin; the complete diagnosis → proposal → human approval → regression → audit → rollback path was exercised through the real preview API on 2026-08-31.
 - [x] Public source repository is available at `https://github.com/jpretty01/forge-webmcp`; GitHub detects and displays the MIT license.
-- [ ] The verified 2:01, 1080p caption-led demonstration, original instrumental audio, and SRT captions are ready locally; upload the final approved cut publicly to YouTube.
+- [x] The verified 2:01, 1080p caption-led demonstration is publicly available at `https://youtu.be/6GO7R_Rjsxc`; YouTube exposes valid embeddable metadata for the video.
 - [ ] Devpost fields use the final public site, source, and video URLs.
 - [ ] Devpost entry is submitted—not left as a draft—and its public page is verified.
 

@@ -82,7 +82,9 @@ https://github.com/jpretty01/forge-webmcp
 
 ## Demo Video
 
-TODO: Upload the verified local candidate to YouTube and add its public URL. The current cut is 2:01 at 1920×1080 with burned-in narrative captions, original light instrumental music, no voice, and a matching SRT caption file.
+https://youtu.be/6GO7R_Rjsxc
+
+The public YouTube video is titled **FORGE** and published by **TMFPRETTY, LLC**. The final cut is 2:01 at 1920×1080 with burned-in narrative captions, original light instrumental music, no voice, and a matching SRT caption file.
 
 The current caption-led cut follows this 121-second outline:
 
@@ -114,10 +116,10 @@ Confirmed today:
 - Type checking, linting, 18 core tests, production build, and production dependency audit pass.
 - Local and public-deployment Playwright matrices pass on desktop and narrow layouts.
 - Production security headers, favicon handling, and absolute Open Graph/X metadata are live.
+- The public YouTube demo resolves successfully and exposes valid embeddable video metadata.
 
 Still required before the final Devpost action:
 
-- Upload and verify the caption-led public YouTube video under three minutes.
 - Confirm the submitter type, country or countries of residence, learning level, and career-value form answers.
 - Review the final Devpost entry and explicitly complete the final submission action before the deadline.
 

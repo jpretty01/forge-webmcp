@@ -130,7 +130,7 @@
 - Add accurate captions and verify names: WebMCP, Ashen Reach, Greyhaven, and FORGE.
 - Export H.264 MP4, 1080p, with AAC audio.
 - Confirm the final runtime is below 3:00 before upload.
-- Set the YouTube video to Public, then test it in a private browser window.
+- [x] Public YouTube video verified through its public watch URL and embeddable metadata: `https://youtu.be/6GO7R_Rjsxc`.
 
 ## Capture Safety Net
 
