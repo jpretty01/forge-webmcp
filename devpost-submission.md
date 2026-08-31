@@ -84,7 +84,7 @@ https://github.com/jpretty01/forge-webmcp
 
 https://youtu.be/6GO7R_Rjsxc
 
-The public YouTube video is titled **FORGE** and published by **TMFPRETTY, LLC**. The final cut is 2:01 at 1920×1080 with burned-in narrative captions, original light instrumental music, no voice, and a matching SRT caption file.
+The public YouTube video is titled **FORGE: Human-Governed Game Worlds with WebMCP | Demo** and published by **TMFPRETTY, LLC**. The final cut is 2:01 at 1920×1080 with burned-in narrative captions, original light instrumental music, no voice, and a matching SRT caption file.
 
 The current caption-led cut follows this 121-second outline:
 
@@ -143,7 +143,7 @@ Official deadline: 2026-09-03 20:00 UTC (3:00 PM America/Chicago; Devpost lists 
 - **28254 — Live URL (required):** https://forge-human-agent-world-laboratory.themfpretty.chatgpt.site
 - **28255 — Testing instructions:** Use the ten-step golden path above. No credentials are required.
 - **28256 — Public code repository (required):** https://github.com/jpretty01/forge-webmcp
-- **28257 — Agents/clients tested (required):** Draft answer: ChatGPT in-app browser for native discovery and tool schemas; Google Chrome/Playwright for desktop and narrow-pane E2E through a standards-shaped WebMCP harness. TODO: update after the public-origin native preview run.
+- **28257 — Agents/clients tested (required):** ChatGPT’s in-app browser for native WebMCP discovery and the complete public-origin diagnosis → proposal → human approval → regression → audit → rollback path; Google Chrome/Playwright for desktop and narrow-pane E2E through a standards-shaped WebMCP harness.
 - **28258 — AI tools used (required):** Codex and ChatGPT, including architecture review, implementation, debugging, security hardening, automated tests, browser QA, and deployment verification.
 - **28259 — Learning level (required):** TODO — choose None, Moderate, or Significant.
 - **28260 — Career AI value (required):** TODO — choose Yes or No.
