@@ -136,7 +136,7 @@ body {
   .nav-item span { @apply ml-auto text-[9px] uppercase tracking-wider text-muted-foreground/60; }
   .nav-item-active { @apply border border-amber-300/10 bg-amber-300/8 text-amber-100; }
   .forge-stage { @apply min-w-0 bg-[#090d0f] p-3 sm:p-4; }
-  .stage-toolbar { @apply flex h-[70px] items-center justify-between rounded-t-2xl border border-b-0 border-white/8 bg-[#101618] px-4; }
+  .stage-toolbar { @apply flex min-h-[78px] items-center justify-between gap-4 rounded-t-2xl border border-b-0 border-white/8 bg-[#101618] px-4 py-3; }
   .world-canvas { @apply relative min-h-[calc(100vh-11rem)] overflow-hidden rounded-b-2xl border border-white/8 bg-[#111916]; }
   .world-grid { @apply absolute inset-0 opacity-35; background-image: linear-gradient(rgb(255 255 255 / 3%) 1px, transparent 1px), linear-gradient(90deg, rgb(255 255 255 / 3%) 1px, transparent 1px); background-size: 36px 36px; transform: perspective(700px) rotateX(18deg) scale(1.2); }
   .world-road { @apply absolute left-[10%] top-[46%] h-24 w-[82%] -rotate-6 rounded-[50%] border-y border-amber-100/8 bg-[#27241c] shadow-[0_0_70px_rgb(0_0_0/35%)]; }
@@ -157,6 +157,9 @@ body {
   .activity-icon svg { @apply size-3.5; }
   .activity-idle { @apply bg-amber-300/8 text-amber-200; }
   .game-frame { @apply min-w-0; }
+  .scene-legend { @apply absolute right-3 top-3 hidden flex-wrap justify-end gap-1.5 rounded-lg border border-white/10 bg-black/65 px-2.5 py-2 text-[9px] text-zinc-200 shadow-xl backdrop-blur sm:flex; }
+  .scene-legend span { @apply flex items-center gap-1.5 whitespace-nowrap; }
+  .scene-legend i { @apply block size-2 rounded-full shadow-[0_0_8px_currentColor]; }
   .location-exits { @apply mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-white/8 bg-white/2 p-2.5; }
   .empty-state { @apply grid min-h-[420px] place-items-center content-center gap-3 rounded-2xl border border-dashed border-white/10 bg-white/2 p-8 text-center; }
   .empty-state h2 { @apply text-lg font-semibold; }

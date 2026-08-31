@@ -84,7 +84,7 @@ https://github.com/jpretty01/forge-webmcp
 
 TODO: Add a public YouTube URL for a narrated video under three minutes.
 
-Planned 175-second outline:
+Recorder-ready 175-second maximum outline (the narrated cut targets 165 seconds):
 
 - 0–15s: real agent prompt and native tool invocation.
 - 15–45s: structured graph inspection and deadlock discovery.
@@ -93,6 +93,8 @@ Planned 175-second outline:
 - 110–135s: provenance-rich audit and rollback.
 - 135–155s: 30-tool registry and shared-service architecture.
 - 155–175s: target audience and reusable human-governed pattern.
+
+The complete narration, shot directions, on-screen titles, and export checklist are maintained in `docs/video-production.md`.
 
 ## Screenshot Shot List
 

@@ -6,7 +6,7 @@ import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 const proof = [
-  { icon: Bot, label: '25+ structured tools', copy: 'Inspection, simulation, repair, and governance.' },
+  { icon: Bot, label: '30 structured tools', copy: 'Inspection, simulation, repair, and governance.' },
   { icon: ShieldCheck, label: 'Human approval', copy: 'Observe, propose, or autonomous permission modes.' },
   { icon: FlaskConical, label: 'Deterministic QA', copy: 'Real graph analysis and seeded combat simulations.' },
 ];

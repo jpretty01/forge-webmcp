@@ -10,13 +10,15 @@ FORGE makes WebMCP visible. Keep the laboratory, activity panel, approval queue,
 
 ## Sub-three-minute Sequence
 
-1. **0–15 seconds:** Paste the golden prompt into a real compatible browser agent. Keep the FORGE laboratory and visible provenance stream on screen.
-2. **15–45 seconds:** Show the native WebMCP agent calling structured inspection and finding the crypt-key circular dependency.
-3. **45–80 seconds:** Show the agent proposing the narrow key relocation. Open Approvals and emphasize that gameplay remains unchanged.
-4. **80–110 seconds:** Approve as the human, run regression, and show that the progression blocker is gone.
-5. **110–135 seconds:** Open Audit, identify the native-agent and human-approval entries, then roll back and show the defect return.
-6. **135–155 seconds:** Open `/webmcp` and show the 30 registered capabilities, schemas, approval annotations, and shared-service boundary.
-7. **155–175 seconds:** Close with: “FORGE is a human-governed live-operations and QA control plane for interactive worlds, demonstrated through a playable RPG.”
+The recorder-ready 165-second shot list, narration, titles, and export checklist live in [`docs/video-production.md`](video-production.md).
+
+1. **0–30 seconds:** Establish the problem, then introduce the named Greyhaven scene and shared human-agent surface.
+2. **30–55 seconds:** Paste the golden prompt into a real compatible browser agent and keep native provenance visible.
+3. **55–78 seconds:** Show the crypt-key circular dependency and logical reproduction.
+4. **78–102 seconds:** Show the unchanged world, inspect the narrow proposal, and approve it as the human.
+5. **102–125 seconds:** Run deterministic regression and prove the blocker is gone.
+6. **125–147 seconds:** Show native-agent versus human-approval provenance, roll back, and reproduce the defect.
+7. **147–175 seconds:** Show the 30-capability registry, explain why WebMCP matters, and close on the audience and reusable pattern.
 
 Built-in demo-helper actions are optional backup material and are visibly labeled. Do not present them as native agent calls.
 

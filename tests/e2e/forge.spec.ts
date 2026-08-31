@@ -24,6 +24,10 @@ test.beforeEach(async ({ page }) => {
 test('landing enters the laboratory and registers every WebMCP capability', async ({ page }) => {
   await page.getByRole('link', { name: 'Run the live demo' }).click();
   await expect(page.getByRole('main')).toBeVisible();
+  await expect(page.getByLabel('Scene symbol legend')).toContainText('Player');
+  await expect(page.getByRole('button', { name: 'Talk to Garrick' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Talk to Elara' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Talk to Rowan' })).toBeVisible();
   await expect.poll(() => page.evaluate(() => (window as unknown as { __forgeRegisteredTools: Map<string, unknown> }).__forgeRegisteredTools.size)).toBe(30);
 });
 
