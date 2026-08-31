@@ -117,11 +117,9 @@ Confirmed today:
 - Local and public-deployment Playwright matrices pass on desktop and narrow layouts.
 - Production security headers, favicon handling, and absolute Open Graph/X metadata are live.
 - The public YouTube demo resolves successfully and exposes valid embeddable video metadata.
+- Devpost recorded submission `1164242` for The WebMCP Challenge at `2026-08-31T16:44:49.298-04:00` and the public project readback is available at `https://devpost.com/software/project-forge-3zyvef`.
 
-Still required before the final Devpost action:
-
-- Confirm the submitter type, country or countries of residence, learning level, and career-value form answers.
-- Review the final Devpost entry and explicitly complete the final submission action before the deadline.
+The final Devpost record has been verified. Further edits remain possible until the deadline.
 
 Official deadline: 2026-09-03 20:00 UTC (3:00 PM America/Chicago; Devpost lists Pacific Time as the event time zone).
 
