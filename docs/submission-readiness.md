@@ -4,14 +4,16 @@ Last hardened: 2026-08-31
 
 ## P0 — External Submission Blockers
 
-- [ ] Public production site opens without owner authentication in an incognito session.
+- [x] Public production site opens without owner authentication; `/`, `/lab`, `/webmcp`, and `/favicon.ico` returned successful unauthenticated responses on 2026-08-31.
 - [ ] All 30 native WebMCP tools are discovered and exercised on the public origin.
-- [ ] Public source repository opens in an incognito session and displays the MIT license.
+- [x] Public source repository is available at `https://github.com/jpretty01/forge-webmcp`; GitHub detects and displays the MIT license.
 - [ ] Public YouTube demonstration is under three minutes and follows `docs/demo-script.md`.
 - [ ] Devpost fields use the final public site, source, and video URLs.
 - [ ] Devpost entry is submitted—not left as a draft—and its public page is verified.
 
 These checks require external account state and must not be marked complete from localhost evidence.
+
+The complete Playwright matrix also passed against the public deployment on 2026-08-31. That verifies the deployed UI and service flow through a standards-shaped WebMCP harness; it does not replace the remaining real preview-browser discovery run.
 
 ## P1 — Implemented Hardening
 
