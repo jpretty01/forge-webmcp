@@ -89,6 +89,7 @@ test('keyboard navigation exposes accessible controls', async ({ page }) => {
 test('narrow layout keeps the world atlas and agent activity available', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'narrow-chatgpt-pane', 'Narrow-layout assertion runs in the narrow project.');
   await page.goto('/lab');
+  await expect.poll(() => page.evaluate(() => (window as unknown as { __forgeRegisteredTools: Map<string, unknown> }).__forgeRegisteredTools.size)).toBe(30);
   await expect(page.getByRole('button', { name: 'Agent activity' })).toBeVisible();
   await page.getByRole('button', { name: 'World atlas' }).click();
   await expect(page.getByRole('navigation', { name: 'Locations' })).toBeVisible();
