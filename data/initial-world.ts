@@ -1,0 +1,178 @@
+import type { ForgeState, WorldSnapshot } from '@/types/domain';
+
+const initialSnapshot: WorldSnapshot = {
+  player: {
+    id: 'player-arden',
+    name: 'Arden',
+    level: 3,
+    health: 100,
+    maxHealth: 100,
+    damage: 18,
+    defense: 7,
+    locationId: 'loc-greyhaven',
+    inventory: [
+      { itemId: 'item-iron-sword', quantity: 1 },
+      { itemId: 'item-healing-draught', quantity: 2 },
+    ],
+    activeQuestIds: [],
+    completedQuestIds: [],
+    experience: 260,
+  },
+  locations: {
+    'loc-greyhaven': {
+      id: 'loc-greyhaven',
+      name: 'Greyhaven',
+      kind: 'town',
+      description: 'A soot-dark frontier town sheltered beneath the Ash Gate.',
+      exits: ['loc-cemetery-road'],
+      npcIds: ['npc-garrick', 'npc-elara', 'npc-rowan'],
+      encounterIds: [],
+      itemIds: [],
+    },
+    'loc-cemetery-road': {
+      id: 'loc-cemetery-road',
+      name: 'Cemetery Road',
+      kind: 'wilds',
+      description: 'A wind-cut path threaded between leaning stones and iron pines.',
+      exits: ['loc-greyhaven', 'loc-crypt-entry'],
+      npcIds: [],
+      encounterIds: ['enc-road-ambush'],
+      itemIds: [],
+    },
+    'loc-crypt-entry': {
+      id: 'loc-crypt-entry',
+      name: 'Crypt Antechamber',
+      kind: 'dungeon',
+      description: 'Dust and candle smoke gather beneath a cracked saintly relief.',
+      exits: ['loc-cemetery-road', 'loc-crypt-gallery'],
+      npcIds: [],
+      encounterIds: ['enc-antechamber'],
+      itemIds: [],
+    },
+    'loc-crypt-gallery': {
+      id: 'loc-crypt-gallery',
+      name: 'Hall of Names',
+      kind: 'dungeon',
+      description: 'An arched gallery where the dead are carved into black stone.',
+      exits: ['loc-crypt-entry', 'loc-crypt-sanctum'],
+      npcIds: [],
+      encounterIds: ['enc-gallery'],
+      itemIds: [],
+    },
+    'loc-crypt-sanctum': {
+      id: 'loc-crypt-sanctum',
+      name: 'Ashen Sanctum',
+      kind: 'dungeon',
+      description: 'The sealed heart of the crypt and prison of the Warden of Ash.',
+      exits: ['loc-crypt-gallery'],
+      npcIds: ['npc-mira'],
+      encounterIds: ['enc-warden'],
+      itemIds: ['item-crypt-key', 'item-mira-locket'],
+      lockedByGateId: 'gate-sanctum-door',
+    },
+  },
+  npcs: {
+    'npc-garrick': {
+      id: 'npc-garrick', name: 'Garrick Thorn', role: 'Town blacksmith',
+      locationId: 'loc-greyhaven', questIds: ['quest-blacksmith-daughter'], state: 'available',
+      dialogue: ['Mira went to the old cemetery before dusk. She never came home.', 'Bring my daughter back. Whatever waits below, do not face it unprepared.'],
+    },
+    'npc-elara': {
+      id: 'npc-elara', name: 'Elara Vale', role: 'Healer and crypt scholar',
+      locationId: 'loc-greyhaven', questIds: ['quest-ashes-remember'], state: 'available',
+      dialogue: ['The Warden listens for steel. Silence and distance may serve you better.', 'Old Greyhaven keys bear a split-crown mark.'],
+    },
+    'npc-rowan': {
+      id: 'npc-rowan', name: 'Captain Rowan', role: 'Guard captain',
+      locationId: 'loc-greyhaven', questIds: [], state: 'available',
+      dialogue: ['Archers nest in the gallery. Close the distance or break their line of sight.'],
+    },
+    'npc-mira': {
+      id: 'npc-mira', name: 'Mira Thorn', role: 'Missing apprentice',
+      locationId: 'loc-crypt-sanctum', questIds: [], state: 'missing',
+      dialogue: ['You found me. The Warden bound the door from both sides.'],
+    },
+  },
+  items: {
+    'item-iron-sword': { id: 'item-iron-sword', name: 'Tempered Iron Sword', kind: 'weapon', description: 'Reliable Greyhaven steel.', collected: true },
+    'item-healing-draught': { id: 'item-healing-draught', name: 'Healing Draught', kind: 'consumable', description: 'Restores 35 health.', collected: true },
+    'item-crypt-key': { id: 'item-crypt-key', name: 'Split-Crown Crypt Key', kind: 'key', description: 'Opens the Ashen Sanctum.', locationId: 'loc-crypt-sanctum', collected: false, requiredForGateId: 'gate-sanctum-door' },
+    'item-mira-locket': { id: 'item-mira-locket', name: "Mira's Locket", kind: 'quest', description: 'A keepsake engraved with the Thorn family mark.', locationId: 'loc-crypt-sanctum', collected: false },
+    'item-ash-sigil': { id: 'item-ash-sigil', name: 'Ash Sigil', kind: 'loot', description: 'The Warden’s broken seal.', collected: false },
+  },
+  quests: {
+    'quest-blacksmith-daughter': {
+      id: 'quest-blacksmith-daughter', name: "The Blacksmith's Daughter", level: 3,
+      summary: 'Find Mira Thorn in the Forgotten Crypt and return her to Greyhaven.',
+      giverNpcId: 'npc-garrick', currentStageId: 'stage-speak-garrick', status: 'available',
+      stages: [
+        { id: 'stage-speak-garrick', title: 'A father’s plea', description: 'Speak with Garrick.', requirements: [{ type: 'npc_state', targetId: 'npc-garrick', value: 'available' }], nextStageIds: ['stage-enter-crypt'] },
+        { id: 'stage-enter-crypt', title: 'Into the forgotten crypt', description: 'Reach the crypt antechamber.', requirements: [{ type: 'location', targetId: 'loc-crypt-entry' }], nextStageIds: ['stage-open-sanctum'] },
+        { id: 'stage-open-sanctum', title: 'The sealed sanctum', description: 'Find the crypt key and open the sanctum.', requirements: [{ type: 'item', targetId: 'item-crypt-key' }, { type: 'location', targetId: 'loc-crypt-sanctum' }], nextStageIds: ['stage-rescue-mira'] },
+        { id: 'stage-rescue-mira', title: 'Break the Warden', description: 'Defeat the Warden and rescue Mira.', requirements: [{ type: 'enemy_defeated', targetId: 'enemy-warden' }, { type: 'npc_state', targetId: 'npc-mira', value: 'rescued' }], nextStageIds: [] },
+      ],
+      rewards: [{ experience: 180 }, { itemId: 'item-ash-sigil' }],
+      endings: ['Mira rescued', 'Mira joins the crypt cult', 'Evidence returned to Garrick'],
+    },
+    'quest-ashes-remember': {
+      id: 'quest-ashes-remember', name: 'What the Ashes Remember', level: 3,
+      summary: 'Recover the Warden’s sigil for Elara Vale.', giverNpcId: 'npc-elara',
+      currentStageId: 'stage-find-sigil', status: 'available',
+      stages: [{ id: 'stage-find-sigil', title: 'A scholar’s proof', description: 'Recover the Ash Sigil.', requirements: [{ type: 'item', targetId: 'item-ash-sigil' }], nextStageIds: [] }],
+      rewards: [{ experience: 90 }],
+    },
+  },
+  enemyArchetypes: {
+    'arch-gravebound': { id: 'arch-gravebound', name: 'Gravebound Skeleton', maxHealth: 38, damage: 9, defense: 3, range: 'melee', ability: 'Shield brace' },
+    'arch-crypt-archer': { id: 'arch-crypt-archer', name: 'Crypt Archer', maxHealth: 28, damage: 12, defense: 2, range: 'ranged', ability: 'Pinning shot' },
+    'arch-ashen-knight': { id: 'arch-ashen-knight', name: 'Ashen Knight', maxHealth: 68, damage: 15, defense: 8, range: 'melee', ability: 'Ashen cleave' },
+    'arch-warden': { id: 'arch-warden', name: 'The Warden of Ash', maxHealth: 125, damage: 18, defense: 10, range: 'melee', ability: 'Cinder verdict' },
+  },
+  enemyBehaviors: {
+    'behavior-gravebound': { id: 'behavior-gravebound', enemyArchetypeId: 'arch-gravebound', aggression: 0.58, preferredDistance: 1, retreatThreshold: 0, coordination: 0.4, targetPriority: 'nearest', reinforcementDelay: 3, specialAttackFrequency: 0.16, patrol: true },
+    'behavior-archer': { id: 'behavior-archer', enemyArchetypeId: 'arch-crypt-archer', aggression: 0.5, preferredDistance: 5, retreatThreshold: 0.3, coordination: 0.55, targetPriority: 'lowest_health', reinforcementDelay: 2, specialAttackFrequency: 0.24, patrol: false },
+    'behavior-knight': { id: 'behavior-knight', enemyArchetypeId: 'arch-ashen-knight', aggression: 0.72, preferredDistance: 1, retreatThreshold: 0.1, coordination: 0.66, targetPriority: 'quest_carrier', reinforcementDelay: 2, specialAttackFrequency: 0.3, patrol: true },
+    'behavior-warden': { id: 'behavior-warden', enemyArchetypeId: 'arch-warden', aggression: 0.78, preferredDistance: 1, retreatThreshold: 0, coordination: 0.8, targetPriority: 'quest_carrier', reinforcementDelay: 1, specialAttackFrequency: 0.36, patrol: false },
+  },
+  enemies: {
+    'enemy-road-skeleton': { id: 'enemy-road-skeleton', archetypeId: 'arch-gravebound', behaviorProfileId: 'behavior-gravebound', health: 38, defeated: false, position: { x: 64, y: 42 } },
+    'enemy-ante-1': { id: 'enemy-ante-1', archetypeId: 'arch-gravebound', behaviorProfileId: 'behavior-gravebound', health: 38, defeated: false, position: { x: 35, y: 38 } },
+    'enemy-ante-2': { id: 'enemy-ante-2', archetypeId: 'arch-gravebound', behaviorProfileId: 'behavior-gravebound', health: 38, defeated: false, position: { x: 61, y: 55 } },
+    'enemy-gallery-archer': { id: 'enemy-gallery-archer', archetypeId: 'arch-crypt-archer', behaviorProfileId: 'behavior-archer', health: 28, defeated: false, position: { x: 72, y: 26 } },
+    'enemy-gallery-knight': { id: 'enemy-gallery-knight', archetypeId: 'arch-ashen-knight', behaviorProfileId: 'behavior-knight', health: 68, defeated: false, position: { x: 53, y: 58 } },
+    'enemy-warden': { id: 'enemy-warden', archetypeId: 'arch-warden', behaviorProfileId: 'behavior-warden', health: 125, defeated: false, position: { x: 62, y: 40 } },
+  },
+  encounters: {
+    'enc-road-ambush': { id: 'enc-road-ambush', name: 'Roadside dead', locationId: 'loc-cemetery-road', enemyIds: ['enemy-road-skeleton'], reinforcementEnemyIds: [], difficultyTarget: 0.2, completed: false },
+    'enc-antechamber': { id: 'enc-antechamber', name: 'Antechamber watch', locationId: 'loc-crypt-entry', enemyIds: ['enemy-ante-1', 'enemy-ante-2'], reinforcementEnemyIds: [], difficultyTarget: 0.38, completed: false },
+    'enc-gallery': { id: 'enc-gallery', name: 'Crossfire in the Hall of Names', locationId: 'loc-crypt-gallery', enemyIds: ['enemy-gallery-archer', 'enemy-gallery-knight'], reinforcementEnemyIds: [], hazard: 'falling-braziers', difficultyTarget: 0.52, completed: false },
+    'enc-warden': { id: 'enc-warden', name: 'The Warden’s sentence', locationId: 'loc-crypt-sanctum', enemyIds: ['enemy-warden'], reinforcementEnemyIds: [], hazard: 'ash-geysers', difficultyTarget: 0.68, completed: false },
+  },
+  gates: {
+    'gate-sanctum-door': { id: 'gate-sanctum-door', name: 'Split-Crown Door', fromLocationId: 'loc-crypt-gallery', toLocationId: 'loc-crypt-sanctum', requiredItemId: 'item-crypt-key', open: false },
+  },
+  dungeons: {
+    'dungeon-forgotten-crypt': { id: 'dungeon-forgotten-crypt', name: 'The Forgotten Crypt', roomIds: ['loc-crypt-entry', 'loc-crypt-gallery', 'loc-crypt-sanctum'], encounterIds: ['enc-antechamber', 'enc-gallery', 'enc-warden'], gateIds: ['gate-sanctum-door'], bossEnemyId: 'enemy-warden', difficultyTarget: { minWinRate: 0.55, maxWinRate: 0.7 }, completed: false },
+  },
+  worldVariables: { miraRescued: false, demoSeed: 1337, cryptDefectActive: true, worldName: 'Ashen Reach' },
+};
+
+export function createInitialForgeState(): ForgeState {
+  const snapshot = structuredClone(initialSnapshot);
+  return {
+    ...snapshot,
+    revision: 1,
+    permissionMode: 'propose',
+    proposals: [],
+    auditLog: [],
+    checkpoints: [],
+    qaExecutions: [],
+    activities: [],
+    selectedLocationId: snapshot.player.locationId,
+    selectedTab: 'world',
+  };
+}
+
+export function createInitialSnapshot(): WorldSnapshot {
+  return structuredClone(initialSnapshot);
+}
