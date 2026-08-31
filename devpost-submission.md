@@ -82,19 +82,19 @@ https://github.com/jpretty01/forge-webmcp
 
 ## Demo Video
 
-TODO: Upload the verified local draft to YouTube and add its public URL. The current cut is 2:49 at 1920×1080 with AAC narration, plus an SRT caption file.
+TODO: Upload the verified local candidate to YouTube and add its public URL. The current cut is 2:01 at 1920×1080 with burned-in narrative captions, original light instrumental music, no voice, and a matching SRT caption file.
 
-Recorder-ready 175-second maximum outline (the narrated cut targets 165 seconds):
+The current caption-led cut follows this 121-second outline:
 
-- 0–15s: real agent prompt and native tool invocation.
-- 15–45s: structured graph inspection and deadlock discovery.
-- 45–80s: narrow reversible repair proposal and unchanged world state.
-- 80–110s: human approval and passing progression regression.
-- 110–135s: provenance-rich audit and rollback.
-- 135–155s: 30-tool registry and shared-service architecture.
-- 155–175s: target audience and reusable human-governed pattern.
+- 0–6s: define FORGE before introducing the scenario.
+- 6–18s: show the circular quest dependency and its player impact.
+- 18–42s: introduce named Greyhaven characters and the shared human-agent world model.
+- 42–68s: show native investigation, the exact deadlock, and a human-gated repair proposal.
+- 68–92s: prove the approved repair and distinguish agent action from human authority.
+- 92–101s: roll back and reproduce the original defect.
+- 101–121s: show the 30-tool registry, shared architecture, and human-governed close.
 
-The complete narration, shot directions, on-screen titles, and export checklist are maintained in `docs/video-production.md`.
+The complete caption copy, shot directions, on-screen titles, and export checklist are maintained in `docs/video-production.md`.
 
 ## Screenshot Shot List
 
@@ -117,9 +117,7 @@ Confirmed today:
 
 Still required before the final Devpost action:
 
-- Run and record the golden path with the real WebMCP preview API on the public origin.
-- Capture the final screenshots.
-- Record, upload, and verify the narrated public YouTube video under three minutes.
+- Upload and verify the caption-led public YouTube video under three minutes.
 - Confirm the submitter type, country or countries of residence, learning level, and career-value form answers.
 - Review the final Devpost entry and explicitly complete the final submission action before the deadline.
 

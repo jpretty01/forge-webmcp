@@ -10,7 +10,7 @@ FORGE makes WebMCP visible. Keep the laboratory, activity panel, approval queue,
 
 ## Sub-three-minute Sequence
 
-The recorder-ready 165-second shot list, narration, titles, and export checklist live in [`docs/video-production.md`](video-production.md).
+The 121-second caption-led shot list, on-screen narrative, titles, and export checklist live in [`docs/video-production.md`](video-production.md).
 
 1. **0–30 seconds:** Establish the problem, then introduce the named Greyhaven scene and shared human-agent surface.
 2. **30–55 seconds:** Paste the golden prompt into a real compatible browser agent and keep native provenance visible.
