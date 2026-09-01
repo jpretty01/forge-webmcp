@@ -170,6 +170,8 @@ export interface QAExecution {
   createdAt: string;
   methodology?: string;
   simulationRuns?: number;
+  worldRevision?: number;
+  runId?: string;
 }
 
 export interface AgentProposal {
@@ -183,6 +185,10 @@ export interface AgentProposal {
   reversible: boolean;
   status: 'pending' | 'approved' | 'rejected';
   createdAt: string;
+  runId?: string;
+  approvedAt?: string;
+  appliedRevision?: number;
+  checkpointId?: string;
 }
 
 export interface AuditEntry {
@@ -199,6 +205,7 @@ export interface AuditEntry {
   stateChanging: boolean;
   checkpointId?: string;
   summary: string;
+  runId?: string;
 }
 
 export interface AgentActivity {
@@ -209,6 +216,7 @@ export interface AgentActivity {
   status: ActivityStatus;
   summary: string;
   timestamp: string;
+  runId?: string;
 }
 
 export interface WorldSnapshot {
@@ -232,10 +240,12 @@ export interface Checkpoint {
   label: string;
   toolName: string;
   snapshot: WorldSnapshot;
+  runId?: string;
 }
 
 export interface ForgeState extends WorldSnapshot {
   revision: number;
+  demoRunNumber: number;
   permissionMode: PermissionMode;
   proposals: AgentProposal[];
   auditLog: AuditEntry[];

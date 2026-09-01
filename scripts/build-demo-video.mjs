@@ -13,61 +13,61 @@ const segments = [
     image: '01-landing.png',
     title: 'FORGE · HUMAN–AGENT WORLD LABORATORY',
     caption: 'A misplaced item can make an entire quest impossible.',
-    spoken: 'A single misplaced item can make an entire game quest impossible to finish. Finding that defect usually means switching between debug tools, scripts, dashboards, and manual playtests. FORGE brings that work into one shared, agent-native laboratory.',
+    spoken: 'A single misplaced item can make an entire quest impossible. FORGE lets a browser agent find the defect, propose a repair, and prove the result, while a person keeps control of every meaningful change.',
   },
   {
     image: '02-lab-overview.png',
     title: 'ONE WORLD · HUMAN UI + WEBMCP',
     caption: 'People and agents act on the same validated world state.',
-    spoken: 'This is Ashen Reach, a small playable role-playing world. People and browser agents operate on the same validated state, so the visible world, approvals, quality results, checkpoints, and audit history never drift apart.',
+    spoken: 'This is Ashen Reach, a playable role-playing world. People and browser agents use the same validated state, so the visible world, approvals, quality results, checkpoints, and audit history stay aligned.',
   },
   {
     image: '03-greyhaven.png',
     title: 'GREYHAVEN · CLEAR TO PEOPLE AND AGENTS',
     caption: 'Named characters for people. Structured entities for agents.',
-    spoken: 'The human screen identifies Arden, Garrick, Elara, and Rowan directly. At the same time, a Web M C P agent receives structured locations, characters, quests, encounters, gates, and items instead of guessing from pixels or unexplained initials.',
+    spoken: 'The screen names Arden, Garrick, Elara, and Rowan directly. The Web M C P agent receives structured locations, characters, quests, encounters, gates, and items instead of guessing from pixels.',
   },
   {
     image: '04-deadlock.png',
     title: 'NATIVE WEBMCP · REAL PROGRESSION ANALYSIS',
     caption: 'Critical: the required key is locked behind its own gate.',
-    spoken: 'I ask the native browser agent to find the most serious progression blocker. FORGE analyzes the real quest graph and discovers a circular dependency: the key needed to open the sanctum is spawned inside that locked sanctum. The logical reproduction shows exactly why the route is unreachable.',
+    spoken: 'I ask the native browser agent for the most serious progression blocker. FORGE inspects the real quest graph and finds a circular dependency: the key needed to open the sanctum is inside that locked sanctum. The reproduction explains exactly why the route is unreachable.',
   },
   {
     image: '05-approval.png',
     title: 'AGENT PROPOSES · HUMAN DECIDES',
     caption: 'The world remains unchanged until a person approves.',
-    spoken: 'Capability is separate from authority. In the default Propose mode, the agent can investigate and prepare the narrowest repair, but a consequential world change waits for a person. I can inspect the parameters, modify them, reject them, or approve the key relocation.',
+    spoken: 'Capability is separate from authority. In Propose mode, the agent investigates and prepares the narrowest repair, but the world stays unchanged. A person can inspect, modify, reject, or approve the key relocation.',
   },
   {
     image: '06-regression.png',
     title: '19 OF 19 VALIDATION CHECKS PASS',
     caption: 'Deterministic regression proves the repaired route is reachable.',
-    spoken: 'Human approval creates a checkpoint and executes through the same application service used by the interface. A seeded regression then passes all nineteen reference, progression, and balance checks. The blocker is gone because the world graph changed, not because the demo displays a hard-coded success message.',
+    spoken: 'Approval creates a rollback checkpoint and executes through the same service used by the interface. A fresh, revision-specific regression passes all nineteen checks. The blocker is gone because the world graph changed, not because FORGE displays a scripted success.',
   },
   {
     image: '07-audit.png',
     title: 'AUDITABLE PROVENANCE',
     caption: 'Native agent, human approval, validation, and checkpoint history.',
-    spoken: 'The audit trail records who requested, approved, executed, and validated every action. Native Web M C P activity is separate from human approval and from built-in demo helpers, so judges can see exactly where agency ends and human authority begins.',
+    spoken: 'The audit trail records who requested, approved, executed, and validated each action. Native Web M C P activity stays distinct from human approval, making the authority boundary easy to inspect.',
   },
   {
     image: '08-rollback.png',
     title: 'ROLLBACK RESTORES THE DEFECT',
     caption: 'Reversible changes remain reproducible after rollback.',
-    spoken: 'Rollback restores the checkpoint without erasing governance history. When the agent reruns progression analysis, the original key-behind-its-own-gate defect is reproducible again.',
+    spoken: 'Rollback restores the checkpoint without erasing history. A new analysis reproduces the original key-behind-its-own-gate defect.',
   },
   {
     image: '09-tool-registry.png',
     title: '30 CAPABILITIES · 7 DOMAINS',
     caption: 'Closed schemas, approval metadata, and one shared service layer.',
-    spoken: 'The Web M C P inspector exposes thirty capabilities across gameplay, quests, encounters, simulation, quality assurance, and governance. Closed schemas validate nested input, mutation tools advertise their approval boundary, and every tool shares the same service layer as the human interface. Web M C P is the product interface, not a chatbot placed on top of it.',
+    spoken: 'The inspector exposes thirty capabilities across gameplay, quests, encounters, simulation, quality assurance, and governance. Closed schemas validate input, mutation tools declare approval requirements, and every tool shares the human interface service layer. Web M C P is the product interface, not a chatbot added on top.',
   },
   {
     image: '10-closing.png',
     title: 'FORGE · BUILD WORLDS TOGETHER',
     caption: 'Agents do the investigative work. People retain meaningful control.',
-    spoken: 'FORGE is a human-governed live-operations and quality control plane for interactive worlds. Agents do the investigative work, people retain meaningful control, and every result remains visible, testable, auditable, and reversible.',
+    spoken: 'FORGE turns Web M C P into a human-governed quality and live-operations control plane. Agents do the investigative work. People keep meaningful control. Every result remains visible, testable, auditable, and reversible.',
   },
 ];
 
@@ -111,7 +111,7 @@ for (const [index, segment] of segments.entries()) {
   await readFile(imagePath);
 
   const audioPath = path.join(outputDir, `audio-${sequence}.aiff`);
-  run('say', ['-v', 'Samantha', '-r', '165', '-o', audioPath, segment.spoken]);
+  run('say', ['-v', 'Daniel', '-r', '160', '-o', audioPath, segment.spoken]);
   const narrationDuration = Number(run('ffprobe', ['-v', 'error', '-show_entries', 'format=duration', '-of', 'default=nokey=1:noprint_wrappers=1', audioPath]));
   const clipDuration = narrationDuration + 1.2;
 
@@ -166,11 +166,24 @@ await browser.close();
 
 const concatPath = path.join(outputDir, 'concat.txt');
 await writeFile(concatPath, clipFiles.map((file) => `file '${file.replaceAll("'", "'\\''")}'`).join('\n'));
-const videoPath = path.join(outputDir, 'FORGE-WebMCP-Demo-draft.mp4');
+const narrationOnlyPath = path.join(outputDir, 'FORGE-WebMCP-Demo-narration-only.mp4');
 run('ffmpeg', [
   '-y', '-hide_banner', '-loglevel', 'error', '-f', 'concat', '-safe', '0', '-i', concatPath,
   '-c', 'copy', '-metadata', 'title=FORGE — Human-Agent World Laboratory',
   '-metadata', 'comment=WebMCP Challenge demo created from verified public-origin states',
+  '-movflags', '+faststart', narrationOnlyPath,
+]);
+
+const videoPath = path.join(outputDir, 'FORGE-WebMCP-Demo-narrated.mp4');
+const musicPath = path.join(outputDir, 'FORGE-original-ambient-music.wav');
+await readFile(musicPath);
+run('ffmpeg', [
+  '-y', '-hide_banner', '-loglevel', 'error', '-i', narrationOnlyPath,
+  '-stream_loop', '-1', '-i', musicPath,
+  '-filter_complex', '[0:a]volume=1[voice];[1:a]volume=0.075[music];[voice][music]amix=inputs=2:duration=first:dropout_transition=2[audio]',
+  '-map', '0:v:0', '-map', '[audio]', '-c:v', 'copy', '-c:a', 'aac', '-b:a', '192k',
+  '-metadata', 'title=FORGE — Human-Agent World Laboratory',
+  '-metadata', 'comment=WebMCP Challenge demo with AI narration and original ambient music',
   '-movflags', '+faststart', videoPath,
 ]);
 
