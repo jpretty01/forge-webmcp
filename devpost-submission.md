@@ -82,19 +82,19 @@ https://github.com/jpretty01/forge-webmcp
 
 ## Demo Video
 
-https://youtu.be/6GO7R_Rjsxc
+https://youtu.be/wIQB_eFURDI
 
-The public YouTube video is titled **FORGE: Human-Governed Game Worlds with WebMCP | Demo** and published by **TMFPRETTY, LLC**. The final cut is 2:01 at 1920×1080 with burned-in narrative captions, original light instrumental music, no voice, and a matching SRT caption file.
+The public YouTube video is titled **FORGE — Human-Governed AI Agents for Game QA | WebMCP Demo** and published by **TMFPRETTY, LLC**. The final cut is 2:36 at 1920×1080 with Daniel AI narration, original light instrumental music, and a matching SRT caption file.
 
-The current caption-led cut follows this 121-second outline:
+The narrated cut follows this judge-focused outline:
 
-- 0–6s: define FORGE before introducing the scenario.
-- 6–18s: show the circular quest dependency and its player impact.
-- 18–42s: introduce named Greyhaven characters and the shared human-agent world model.
-- 42–68s: show native investigation, the exact deadlock, and a human-gated repair proposal.
-- 68–92s: prove the approved repair and distinguish agent action from human authority.
-- 92–101s: roll back and reproduce the original defect.
-- 101–121s: show the 30-tool registry, shared architecture, and human-governed close.
+- 0–14s: define the progression problem and FORGE's value immediately.
+- 14–44s: introduce the shared human-agent world and clearly named Greyhaven characters.
+- 44–61s: show native investigation and the exact circular dependency.
+- 61–77s: show the human-gated repair proposal and unchanged world state.
+- 77–94s: prove the approved repair with fresh, revision-specific regression.
+- 94–117s: show attributable audit evidence, rollback, and defect reproduction.
+- 117–156s: show the 30-tool registry, shared architecture, and human-governed close.
 
 The complete caption copy, shot directions, on-screen titles, and export checklist are maintained in `docs/video-production.md`.
 
